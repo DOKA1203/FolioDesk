@@ -46,6 +46,16 @@ public class FolioDataManager {
         SaveData();
     }
 
+    public void ReorderFiles(int folderId, IList<FolioItem> orderedItems) {
+        var folder = GetFolioFolder(folderId);
+        if (folder == null) return;
+
+        for (int i = 0; i < orderedItems.Count; i++) {
+            orderedItems[i].Order = i;
+        }
+        SaveData();
+    }
+
     private int GetLastId() {
         if (Data.Folders.Count == 0) return 0;
         var folderMaxId = Data.Folders.Max(f => f.Id);

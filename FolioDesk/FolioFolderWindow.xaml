@@ -23,7 +23,7 @@
     </Window.Resources>
 
     <Border CornerRadius="20" BorderThickness="0" Padding="8"
-            Background="#CC2D2D2D">
+            Background="#CC2D2D2D" AllowDrop="True">
         <Grid>
             <ItemsControl x:Name="AppFolderPanel">
                 <ItemsControl.ItemsPanel>
@@ -37,7 +37,13 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Margin="6" CornerRadius="12"
-                                Cursor="Hand" MouseLeftButtonDown="Icon_Click" Focusable="True">
+                                AllowDrop="True"
+                                Cursor="Hand" Focusable="True"
+                                PreviewMouseLeftButtonDown="Icon_PreviewMouseDown"
+                                MouseMove="Icon_MouseMove"
+                                MouseLeftButtonUp="Icon_Click"
+                                DragOver="Icon_DragOver"
+                                Drop="Icon_Drop">
                             <Border.Style>
                                 <Style TargetType="Border">
                                     <Style.Triggers>
@@ -61,6 +67,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <Canvas x:Name="DragLayer" IsHitTestVisible="False"/>
         </Grid>
     </Border>
 </Window>
