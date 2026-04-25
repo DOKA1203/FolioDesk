@@ -1,0 +1,66 @@
+<Window x:Class="FolioDesk.FolioFolderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        Title="FolioDesk" SizeToContent="WidthAndHeight" MinHeight="116" MinWidth="96"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False"
+        Opacity="0.97">
+    <Window.Resources>
+        <Style TargetType="{x:Type Window}">
+            <Setter Property="WindowChrome.WindowChrome">
+                <Setter.Value>
+                    <WindowChrome CaptionHeight="0"
+                                  CornerRadius="2"
+                                  GlassFrameThickness="0"
+                                  NonClientFrameEdges="None"
+                                  ResizeBorderThickness="3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="20" BorderThickness="0" Padding="8"
+            Background="#CC2D2D2D">
+        <Grid>
+            <ItemsControl x:Name="AppFolderPanel">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Center"
+                                   VerticalAlignment="Top"
+                                   ItemWidth="80" ItemHeight="100"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="6" CornerRadius="12"
+                                Cursor="Hand" MouseLeftButtonDown="Icon_Click" Focusable="True">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#33FFFFFF"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,4,0,4"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <TextBlock Text="{Binding Name}" FontSize="11"
+                                           HorizontalAlignment="Center"
+                                           Foreground="White"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="72"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Border>
+</Window>
