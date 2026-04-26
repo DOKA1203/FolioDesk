@@ -169,13 +169,7 @@ public partial class FolioFolderWindow : Window {
             if (File.Exists(src)) {
                 var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                 var dest = GetUniqueDesktopPath(desktop, Path.GetFileName(src));
-                File.Move(src, dest);
-            }
-
-            var appDir = Path.GetDirectoryName(src);
-            if (!string.IsNullOrEmpty(appDir) && Directory.Exists(appDir)) {
-                try { Directory.Delete(appDir, recursive: true); }
-                catch (Exception ex) { Console.WriteLine($"Cleanup failed: {ex.Message}"); }
+                File.Copy(src, dest, overwrite: false);
             }
 
             App.DataManager.RemoveFileFromFolder(_folderId, icon.Item);
