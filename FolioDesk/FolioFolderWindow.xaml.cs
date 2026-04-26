@@ -1,12 +1,17 @@
 
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using FolioDesk.Icons;
 using FolioDesk.Models;
+using FolioDesk.ShortCuts;
 
 
 namespace FolioDesk;
@@ -23,7 +28,12 @@ public partial class FolioFolderWindow : Window {
     private Point _grabOffset;
     private bool _isDragging;
     private bool _justDragged;
+    private bool _droppedInternally;
     private Image? _dragGhost;
+
+    private const double ItemWidth = 80.0;
+    private const double FramePadding = 16.0;
+    private const int SingleRowMax = 5;
 
     public FolioFolderWindow(int folderId) {
         InitializeComponent();
@@ -38,10 +48,37 @@ public partial class FolioFolderWindow : Window {
             }
         }
 
-        const double itemWidth = 80.0;
-        int cols = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(_appIcons.Count)));
-        AppFolderPanel.Width = cols * itemWidth;
+        ApplyContentWidth();
         AppFolderPanel.ItemsSource = _appIcons;
+
+        var targetWidth = AppFolderPanel.Width + FramePadding;
+        var startWidth = Math.Min(ItemWidth + FramePadding, targetWidth);
+        Width = startWidth;
+
+        if (targetWidth > startWidth + 0.5) {
+            Loaded += (_, _) => AnimateOpenWidth(startWidth, targetWidth);
+        }
+    }
+
+    private void ApplyContentWidth() {
+        int n = _appIcons.Count;
+        int rows = n <= SingleRowMax ? 1 : 2;
+        int cols = Math.Max(1, (int)Math.Ceiling(n / (double)rows));
+        AppFolderPanel.Width = cols * ItemWidth;
+    }
+
+    private void AnimateOpenWidth(double from, double to) {
+        var anim = new DoubleAnimation {
+            From = from,
+            To = to,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        };
+        anim.Completed += (_, _) => {
+            BeginAnimation(WidthProperty, null);
+            Width = to;
+        };
+        BeginAnimation(WidthProperty, anim);
     }
 
 
@@ -59,7 +96,13 @@ public partial class FolioFolderWindow : Window {
 
         public AppIcon(FolioItem item) {
             Item = item;
-            Icon = new BitmapImage(new Uri(item.Icon, UriKind.Absolute));
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.UriSource = new Uri(item.Icon, UriKind.Absolute);
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.EndInit();
+            bmp.Freeze();
+            Icon = bmp;
         }
     }
 
@@ -83,6 +126,7 @@ public partial class FolioFolderWindow : Window {
         }
 
         _isDragging = true;
+        _droppedInternally = false;
         StartDragGhost(border);
         try {
             var data = new DataObject(DragFormat, icon);
@@ -93,6 +137,74 @@ public partial class FolioFolderWindow : Window {
             _isDragging = false;
             _justDragged = true;
         }
+
+        if (!_droppedInternally && IsCursorOutsideWindow()) {
+            ExtractToDesktop(icon);
+        }
+    }
+
+    private bool IsCursorOutsideWindow() {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero) return false;
+        if (!GetCursorPos(out var pt)) return false;
+        if (!GetWindowRect(hwnd, out var rect)) return false;
+        return pt.X < rect.Left || pt.X > rect.Right || pt.Y < rect.Top || pt.Y > rect.Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT pt);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X; public int Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+
+    private void ExtractToDesktop(AppIcon icon) {
+        try {
+            var src = icon.LnkPath;
+            if (File.Exists(src)) {
+                var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                var dest = GetUniqueDesktopPath(desktop, Path.GetFileName(src));
+                File.Move(src, dest);
+            }
+
+            var appDir = Path.GetDirectoryName(src);
+            if (!string.IsNullOrEmpty(appDir) && Directory.Exists(appDir)) {
+                try { Directory.Delete(appDir, recursive: true); }
+                catch (Exception ex) { Console.WriteLine($"Cleanup failed: {ex.Message}"); }
+            }
+
+            App.DataManager.RemoveFileFromFolder(_folderId, icon.Item);
+            _appIcons.Remove(icon);
+
+            var icoName = IconGenerator.GenerateIcon(_folderId);
+            ShortCutManager.UpdateShortcut(_folderId, icoName);
+
+            ApplyContentWidth();
+            Width = AppFolderPanel.Width + FramePadding;
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"Extract to desktop failed: {ex.Message}");
+        }
+    }
+
+    private static string GetUniqueDesktopPath(string desktopDir, string fileName) {
+        var path = Path.Combine(desktopDir, fileName);
+        if (!File.Exists(path)) return path;
+
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        var ext = Path.GetExtension(fileName);
+        var counter = 2;
+        string candidate;
+        do {
+            candidate = Path.Combine(desktopDir, $"{name} ({counter}){ext}");
+            counter++;
+        } while (File.Exists(candidate));
+        return candidate;
     }
 
     private void StartDragGhost(Border source) {
@@ -142,6 +254,7 @@ public partial class FolioFolderWindow : Window {
         e.Handled = true;
         if (e.Data.GetData(DragFormat) is not AppIcon dragged) return;
         if (sender is not Border border || border.DataContext is not AppIcon target) return;
+        _droppedInternally = true;
         if (ReferenceEquals(dragged, target)) return;
 
         int oldIndex = _appIcons.IndexOf(dragged);

@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
-        Title="FolioDesk" SizeToContent="WidthAndHeight" MinHeight="116" MinWidth="96"
+        Title="FolioDesk" Width="96" SizeToContent="Height" MinHeight="116"
         WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False"
         Opacity="0.97">
@@ -25,7 +25,7 @@
     <Border CornerRadius="20" BorderThickness="0" Padding="8"
             Background="#CC2D2D2D" AllowDrop="True">
         <Grid>
-            <ItemsControl x:Name="AppFolderPanel">
+            <ItemsControl x:Name="AppFolderPanel" HorizontalAlignment="Left">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel HorizontalAlignment="Center"

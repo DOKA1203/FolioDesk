@@ -50,8 +50,19 @@ public class FolioDataManager {
         var folder = GetFolioFolder(folderId);
         if (folder == null) return;
 
-        for (int i = 0; i < orderedItems.Count; i++) {
+        for (var i = 0; i < orderedItems.Count; i++) {
             orderedItems[i].Order = i;
+        }
+        SaveData();
+    }
+
+    public void RemoveFileFromFolder(int folderId, FolioItem item) {
+        var folder = GetFolioFolder(folderId);
+        if (folder == null) return;
+
+        folder.Files.Remove(item);
+        for (int i = 0; i < folder.Files.Count; i++) {
+            folder.Files[i].Order = i;
         }
         SaveData();
     }
