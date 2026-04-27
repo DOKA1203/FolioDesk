@@ -1,13 +1,69 @@
 ﻿<Window x:Class="FolioDesk.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:FolioDesk"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button Content="Create New Folder" Width="140" Height="60" Click="CreateFolder"/>
+        Title="FolioDesk"
+        Width="360" Height="200"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent">
 
-    </Grid>
+    <Border CornerRadius="20" Background="#0F1222" Padding="16">
+        <Grid>
+
+            <!-- 상단 타이틀바 -->
+            <Grid VerticalAlignment="Top" Height="40"
+                  Background="Transparent"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel>
+                        <TextBlock Text="FolioDesk" Foreground="White" FontWeight="Bold" Padding="5 0 0 0 " />
+                        <TextBlock Text="바탕화면 앱 폴더" Foreground="#888" FontSize="10" Padding="5 0 0 0 "/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 오른쪽 버튼 -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <Button Content="✕" Style="{StaticResource TitleButton}" Click="CloseButton_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- 중앙 컨텐츠 -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                <!-- 버튼 -->
+                <Button Content="+  새 폴더"
+                        Width="180" Height="45"
+                        Background="#7C6CF2"
+                        Foreground="White"
+                        BorderThickness="0"
+                        FontWeight="Bold"
+                        Cursor="Hand"
+                        Click="CreateFolder">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border CornerRadius="12"
+                                                Background="{TemplateBinding Background}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+            </StackPanel>
+
+        </Grid>
+    </Border>
 </Window>
