@@ -4,6 +4,9 @@
              xmlns:local="clr-namespace:FolioDesk">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Strings/ko.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
             <Style x:Key="TitleButton" TargetType="Button">
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="Background" Value="Transparent"/>

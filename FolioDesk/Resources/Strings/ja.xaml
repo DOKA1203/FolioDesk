@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AppSubtitle">デスクトップアプリフォルダー</sys:String>
+    <sys:String x:Key="NewFolder">+  新しいフォルダー</sys:String>
+    <sys:String x:Key="DefaultFolderName">新しいフォルダー</sys:String>
+    <sys:String x:Key="DefaultShortcutName">新しいアプリフォルダー {0}</sys:String>
+    <sys:String x:Key="MousePositionError">マウスの位置を取得できません。</sys:String>
+    <sys:String x:Key="LangToggle">日</sys:String>
+</ResourceDictionary>

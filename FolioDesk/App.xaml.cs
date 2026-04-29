@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using FolioDesk.Icons;
 using FolioDesk.Models;
+using FolioDesk.Services;
 using FolioDesk.ShortCuts;
 
 namespace FolioDesk;
@@ -28,7 +29,7 @@ public partial class App : Application {
     // 지정한 폴더 ID에 해당하는 폴더 팝업을 커서 위치에 표시
     private static void ShowWindowAtCursor(int folderId) {
         if (!GetCursorPos(out var cursor)) {
-            MessageBox.Show("마우스 위치를 가져올 수 없습니다.");
+            MessageBox.Show(LocalizationService.Get("MousePositionError"));
             return;
         }
 
@@ -51,6 +52,7 @@ public partial class App : Application {
 
     protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
+        LocalizationService.Initialize();
 
         switch (e.Args.Length) {
             case 0:

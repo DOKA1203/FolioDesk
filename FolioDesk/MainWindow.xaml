@@ -1,4 +1,4 @@
-﻿<Window x:Class="FolioDesk.MainWindow"
+<Window x:Class="FolioDesk.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="FolioDesk"
@@ -23,12 +23,13 @@
                 <StackPanel Orientation="Horizontal">
                     <StackPanel>
                         <TextBlock Text="FolioDesk" Foreground="White" FontWeight="Bold" Padding="5 0 0 0 " />
-                        <TextBlock Text="바탕화면 앱 폴더" Foreground="#888" FontSize="10" Padding="5 0 0 0 "/>
+                        <TextBlock Text="{DynamicResource AppSubtitle}" Foreground="#888" FontSize="10" Padding="5 0 0 0 "/>
                     </StackPanel>
                 </StackPanel>
 
                 <!-- 오른쪽 버튼 -->
                 <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <Button Content="{DynamicResource LangToggle}" Style="{StaticResource TitleButton}" Click="ToggleLang_Click"/>
                     <Button Content="✕" Style="{StaticResource TitleButton}" Click="CloseButton_Click"/>
                 </StackPanel>
             </Grid>
@@ -37,7 +38,7 @@
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
                 <!-- 버튼 -->
-                <Button Content="+  새 폴더"
+                <Button Content="{DynamicResource NewFolder}"
                         Width="180" Height="45"
                         Background="#7C6CF2"
                         Foreground="White"

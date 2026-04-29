@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="AppSubtitle">Desktop App Folder</sys:String>
+    <sys:String x:Key="NewFolder">+  New Folder</sys:String>
+    <sys:String x:Key="DefaultFolderName">New Folder</sys:String>
+    <sys:String x:Key="DefaultShortcutName">New AppFolder {0}</sys:String>
+    <sys:String x:Key="MousePositionError">Unable to get mouse position.</sys:String>
+    <sys:String x:Key="LangToggle">EN</sys:String>
+</ResourceDictionary>
