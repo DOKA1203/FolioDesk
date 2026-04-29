@@ -25,7 +25,7 @@ public partial class MainWindow : Window {
     }
 
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) {
-        Process.Start(new ProcessStartInfo("https://github.com/doka1203/FolioDesk/releases/latest") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("https://github.com/doka1203/FolioDesk/") { UseShellExecute = true });
     }
 
     private void CreateFolder(object sender, RoutedEventArgs e) {
