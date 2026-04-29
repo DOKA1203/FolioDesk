@@ -14,6 +14,7 @@ namespace FolioDesk;
 /// Interaction logic for App.xaml
 /// </summary>
 public partial class App : Application {
+    public static readonly string Version = "v1.0.0";
     public static readonly string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FolioDesk");
     public static readonly FolioDataManager DataManager = new();
     

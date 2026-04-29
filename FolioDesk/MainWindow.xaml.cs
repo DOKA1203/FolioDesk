@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using FolioDesk.Services;
@@ -21,6 +22,10 @@ public partial class MainWindow : Window {
 
     private void ToggleLang_Click(object sender, RoutedEventArgs e) {
         LocalizationService.ToggleLanguage();
+    }
+
+    private void CheckUpdate_Click(object sender, RoutedEventArgs e) {
+        Process.Start(new ProcessStartInfo("https://github.com/doka1203/FolioDesk/releases/latest") { UseShellExecute = true });
     }
 
     private void CreateFolder(object sender, RoutedEventArgs e) {
