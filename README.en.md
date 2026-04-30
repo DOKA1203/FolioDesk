@@ -25,6 +25,10 @@ FolioDesk brings the iOS / Android app folder experience to your Windows desktop
 Group scattered desktop icons into folders just like on mobile, then open and close them with a single click.  
 No complex setup required — works immediately after installation and leaves zero footprint when closed (no background process).
 
+## 🎬 Demo
+
+[![FolioDesk Demo](https://img.youtube.com/vi/fOiZs36iT4k/maxresdefault.jpg)](https://www.youtube.com/watch?v=fOiZs36iT4k)
+
 ## ✨ Features
 
 - **Mobile-style app folders** — Group and organize apps into folders the same way iOS / Android does
