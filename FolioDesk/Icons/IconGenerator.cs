@@ -10,7 +10,15 @@ public static class IconGenerator {
         var iconsDir = Path.Combine(App.DataFolder, "icons", $"{folderId}");
         var filePaths = GetFilePaths(folderId);
 
-        using var background = CreateBaseImage(backgroundColor ?? Color.FromArgb(216, 216, 216));
+        Color bgColor;
+        if (backgroundColor.HasValue) {
+            bgColor = backgroundColor.Value;
+        } else {
+            var folder = App.DataManager.GetFolioFolder(folderId);
+            bgColor = ParseIconColor(folder?.IconColor);
+        }
+
+        using var background = CreateBaseImage(bgColor);
         DrawIconsOnBackground(background, filePaths);
 
         // 기존 .ico 제거 후 디렉토리 보장
@@ -22,6 +30,23 @@ public static class IconGenerator {
         SaveAsIco(background, icoPath);
 
         return fileName;
+    }
+
+    private static Color ParseIconColor(string? hex) {
+        if (string.IsNullOrEmpty(hex)) return Color.FromArgb(255, 216, 216, 216);
+        hex = hex.TrimStart('#');
+        return hex.Length switch {
+            8 => Color.FromArgb(
+                Convert.ToByte(hex[0..2], 16),
+                Convert.ToByte(hex[2..4], 16),
+                Convert.ToByte(hex[4..6], 16),
+                Convert.ToByte(hex[6..8], 16)),
+            6 => Color.FromArgb(255,
+                Convert.ToByte(hex[0..2], 16),
+                Convert.ToByte(hex[2..4], 16),
+                Convert.ToByte(hex[4..6], 16)),
+            _ => Color.FromArgb(255, 216, 216, 216)
+        };
     }
 
     private static Bitmap CreateBaseImage(Color fillColor, int cornerRadius = 45) {

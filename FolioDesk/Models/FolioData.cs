@@ -56,6 +56,13 @@ public class FolioDataManager {
         SaveData();
     }
 
+    public void UpdateFolderColor(int folderId, string argbHex) {
+        var folder = GetFolioFolder(folderId);
+        if (folder == null) return;
+        folder.IconColor = argbHex;
+        SaveData();
+    }
+
     public void RemoveFileFromFolder(int folderId, FolioItem item) {
         var folder = GetFolioFolder(folderId);
         if (folder == null) return;
@@ -114,4 +121,7 @@ public class FolioFolder {
 
     [JsonPropertyName("files")]
     public List<FolioItem> Files { get; set; } = [];
+
+    [JsonPropertyName("iconColor")]
+    public string IconColor { get; set; } = "#FFD8D8D8";
 }

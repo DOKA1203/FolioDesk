@@ -22,10 +22,53 @@
         </Style>
     </Window.Resources>
 
-    <Border CornerRadius="20" BorderThickness="0" Padding="8"
+    <Border CornerRadius="20" BorderThickness="0" Padding="8,4,8,8"
             Background="#CC2D2D2D" AllowDrop="True">
         <Grid>
-            <ItemsControl x:Name="AppFolderPanel" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 설정 버튼 -->
+            <Button x:Name="SettingsButton" Grid.Row="0"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Width="20" Height="20"
+                    FontSize="12"
+                    Cursor="Hand"
+                    Click="SettingsButton_Click"
+                    ToolTip="아이콘 색상 설정">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Foreground" Value="#99FFFFFF"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bg" CornerRadius="4"
+                                            Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bg" Property="Background" Value="#33FFFFFF"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="Bg" Property="Background" Value="#55FFFFFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+                ⚙
+            </Button>
+
+            <ItemsControl x:Name="AppFolderPanel" Grid.Row="1" HorizontalAlignment="Left">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel HorizontalAlignment="Center"
@@ -67,7 +110,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Canvas x:Name="DragLayer" IsHitTestVisible="False"/>
+            <Canvas x:Name="DragLayer" IsHitTestVisible="False" Grid.RowSpan="2"/>
         </Grid>
     </Border>
 </Window>

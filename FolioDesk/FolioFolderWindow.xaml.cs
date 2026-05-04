@@ -29,6 +29,7 @@ public partial class FolioFolderWindow : Window {
     private bool _isDragging;
     private bool _justDragged;
     private bool _droppedInternally;
+    private bool _settingsOpen;
     private Image? _dragGhost;
 
     private const double ItemWidth = 80.0;
@@ -83,10 +84,20 @@ public partial class FolioFolderWindow : Window {
 
 
     private void OtherWindow_Deactivated(object sender, EventArgs e) {
-        if (_isDragging) return;
+        if (_isDragging || _settingsOpen) return;
         if (!IsMouseOver) {
             Close();
         }
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e) {
+        _settingsOpen = true;
+        var settingsWindow = new IconSettingsWindow(_folderId) {
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        settingsWindow.ShowDialog();
+        _settingsOpen = false;
     }
     private class AppIcon {
         public FolioItem Item { get; }
