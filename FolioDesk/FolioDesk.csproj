@@ -9,10 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="Resources\base.png" />
-    </ItemGroup>
-
-    <ItemGroup>
       <COMReference Include="IWshRuntimeLibrary">
         <WrapperTool>tlbimp</WrapperTool>
         <VersionMinor>0</VersionMinor>

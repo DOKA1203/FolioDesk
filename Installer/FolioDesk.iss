@@ -6,7 +6,7 @@
 #define MyAppIcon "D:\Projects\DOKA\FolioDesk\Installer\ICO.ico"
 
 [Setup]
-AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+AppId={40DF4033-CCC5-4A03-AB80-C13323DF6D0E}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}

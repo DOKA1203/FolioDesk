@@ -2,16 +2,15 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Reflection;
 
 namespace FolioDesk.Icons;
 
 public static class IconGenerator {
-    public static string GenerateIcon(int folderId) {
+    public static string GenerateIcon(int folderId, Color? backgroundColor = null) {
         var iconsDir = Path.Combine(App.DataFolder, "icons", $"{folderId}");
         var filePaths = GetFilePaths(folderId);
 
-        using var background = LoadBaseImage();
+        using var background = CreateBaseImage(backgroundColor ?? Color.FromArgb(216, 216, 216));
         DrawIconsOnBackground(background, filePaths);
 
         // 기존 .ico 제거 후 디렉토리 보장
@@ -25,11 +24,27 @@ public static class IconGenerator {
         return fileName;
     }
 
-    private static Bitmap LoadBaseImage() {
-        var stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("FolioDesk.Resources.base.png")
-            ?? throw new FileNotFoundException("Embedded resource 'FolioDesk.Resources.base.png' not found.");
-        return new Bitmap(stream);
+    private static Bitmap CreateBaseImage(Color fillColor, int cornerRadius = 45) {
+        const int size = 256;
+        var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.Clear(Color.Transparent);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        using var path = BuildRoundedRectPath(new Rectangle(0, 0, size, size), cornerRadius);
+        using var brush = new SolidBrush(fillColor);
+        g.FillPath(brush, path);
+        return bmp;
+    }
+
+    private static GraphicsPath BuildRoundedRectPath(Rectangle rect, int radius) {
+        var d = radius * 2;
+        var path = new GraphicsPath();
+        path.AddArc(rect.X,           rect.Y,            d, d, 180, 90);
+        path.AddArc(rect.Right - d,   rect.Y,            d, d, 270, 90);
+        path.AddArc(rect.Right - d,   rect.Bottom - d,   d, d,   0, 90);
+        path.AddArc(rect.X,           rect.Bottom - d,   d, d,  90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     private static List<string> GetFilePaths(int folderId) {
