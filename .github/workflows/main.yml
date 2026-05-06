@@ -2,9 +2,12 @@ name: Build & Release WPF App
 
 on:
   push:
-    branches: [ "master" ]
-  release:
-    types: [ published ]
+    tags:
+      - 'v*'  # v1.0.0 같은 태그 푸시 시 실행
+  workflow_dispatch: # 수동 실행 가능
+
+permissions:
+  contents: write # Release 업로드를 위해 반드시 필요
 
 env:
   DOTNET_VERSION: '10.0.x'
@@ -13,30 +16,8 @@ env:
   ISS_PATH: 'Installer/FolioDesk.iss'
 
 jobs:
-  build:
-    if: github.event_name == 'push'
+  build-and-release:
     runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: microsoft/setup-msbuild@v2
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          include-prerelease: true
-
-      - name: Restore
-        run: dotnet restore ${{ env.PROJECT_PATH }} --runtime ${{ matrix.runtime }}
-
-      - name: Build
-        run: msbuild ${{ env.PROJECT_PATH }} /p:Configuration=Release
-
-  release:
-    if: github.event_name == 'release'
-    runs-on: windows-latest
-
     strategy:
       matrix:
         runtime: [ win-x64, win-arm64 ]
@@ -58,10 +39,11 @@ jobs:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
 
+      # 1. Restore (matrix 정상 참조)
       - name: Restore dependencies
         run: dotnet restore ${{ env.PROJECT_PATH }} --runtime ${{ matrix.runtime }}
 
-      # 2. 빌드 및 게시는 MSBuild로 진행 (COM 참조 해결)
+      # 2. Build 및 Publish
       - name: Build and Publish
         run: >
           msbuild ${{ env.PROJECT_PATH }}
@@ -75,21 +57,25 @@ jobs:
           /p:NoRestore=true
 
       - name: Install Inno Setup
-        run: choco install innosetup --version=6.2.2 --yes
+        run: choco install innosetup --yes
 
+      # 3. 인스톨러 빌드
       - name: Build Installer
         shell: pwsh
         run: |
+          # 태그명에서 'v' 제거 (선택 사항: 1.0.0 형태만 남기기 위해)
+          $CleanVersion = "${{ github.ref_name }}".TrimStart("v")
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DAppVersion="${{ github.ref_name }}" `
+            /DAppVersion="$CleanVersion" `
             /DRuntimeIdentifier="${{ matrix.runtime }}" `
-            /DPublishDir="${{ github.workspace }}\publish\${{ matrix.runtime }}" `
+            /DPublishDir="${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}" `
             /DOutputDir="${{ github.workspace }}\installer" `
             "${{ github.workspace }}\${{ env.ISS_PATH }}"
 
-      # 🔥 Release에 업로드 (핵심)
+      # 4. GitHub Release 업로드
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: installer/*.exe
         env:
