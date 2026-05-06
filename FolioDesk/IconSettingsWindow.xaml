@@ -124,6 +124,7 @@
                 <Slider x:Name="OpacitySlider"
                         Minimum="10" Maximum="100" Value="100"
                         TickFrequency="10" IsSnapToTickEnabled="False"
+                        IsMoveToPointEnabled="True"
                         ValueChanged="OpacitySlider_ValueChanged"/>
             </StackPanel>
 
