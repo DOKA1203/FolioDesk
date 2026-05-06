@@ -1,0 +1,94 @@
+name: Build & Release WPF App
+
+on:
+  push:
+    branches: [ "main" ]
+  release:
+    types: [ published ]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT_PATH: 'FolioDesk/FolioDesk.csproj'
+  OUTPUT_DIR: 'publish'
+  ISS_PATH: 'Installer/FolioDesk.iss'
+
+jobs:
+  build:
+    if: github.event_name == 'push'
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          include-prerelease: true
+
+      - name: Restore
+        run: msbuild ${{ env.PROJECT_PATH }} -t:restore
+
+      - name: Build
+        run: msbuild ${{ env.PROJECT_PATH }} /p:Configuration=Release
+
+  release:
+    if: github.event_name == 'release'
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        runtime: [ win-x64, win-arm64 ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          include-prerelease: true
+
+      # 캐시 (속도 개선)
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+
+      - name: Restore
+        run: msbuild ${{ env.PROJECT_PATH }} -t:restore
+
+      - name: Publish
+        run: >
+          msbuild ${{ env.PROJECT_PATH }}
+          /p:Configuration=Release
+          /p:RuntimeIdentifier=${{ matrix.runtime }}
+          /p:PublishDir="${{ github.workspace }}\publish\${{ matrix.runtime }}"
+          /t:Publish
+          /p:SelfContained=true
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Install Inno Setup
+        run: choco install innosetup --version=6.2.2 --yes
+
+      - name: Build Installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion="${{ github.ref_name }}" `
+            /DRuntimeIdentifier="${{ matrix.runtime }}" `
+            /DPublishDir="${{ github.workspace }}\publish\${{ matrix.runtime }}" `
+            /DOutputDir="${{ github.workspace }}\installer" `
+            "${{ github.workspace }}\${{ env.ISS_PATH }}"
+
+      # 🔥 Release에 업로드 (핵심)
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
