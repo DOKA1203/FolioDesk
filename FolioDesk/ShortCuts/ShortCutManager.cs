@@ -5,7 +5,7 @@ using IWshRuntimeLibrary;
 
 namespace FolioDesk.ShortCuts;
 
-public class ShortCutManager {
+public static class ShortCutManager {
     [DllImport("Shell32.dll")]
     private static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);
     private static readonly string DesktopDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
