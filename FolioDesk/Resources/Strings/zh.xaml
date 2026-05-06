@@ -7,4 +7,7 @@
     <sys:String x:Key="DefaultShortcutName">新应用文件夹 {0}</sys:String>
     <sys:String x:Key="MousePositionError">无法获取鼠标位置。</sys:String>
     <sys:String x:Key="LangToggle">中</sys:String>
+    <sys:String x:Key="IconColorTitle">图标颜色</sys:String>
+    <sys:String x:Key="Opacity">透明度</sys:String>
+    <sys:String x:Key="Apply">应用</sys:String>
 </ResourceDictionary>

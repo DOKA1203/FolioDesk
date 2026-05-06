@@ -7,4 +7,7 @@
     <sys:String x:Key="DefaultShortcutName">New AppFolder {0}</sys:String>
     <sys:String x:Key="MousePositionError">Unable to get mouse position.</sys:String>
     <sys:String x:Key="LangToggle">EN</sys:String>
+    <sys:String x:Key="IconColorTitle">Icon Color</sys:String>
+    <sys:String x:Key="Opacity">Opacity</sys:String>
+    <sys:String x:Key="Apply">Apply</sys:String>
 </ResourceDictionary>

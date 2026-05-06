@@ -7,4 +7,7 @@
     <sys:String x:Key="DefaultShortcutName">新しいアプリフォルダー {0}</sys:String>
     <sys:String x:Key="MousePositionError">マウスの位置を取得できません。</sys:String>
     <sys:String x:Key="LangToggle">日</sys:String>
+    <sys:String x:Key="IconColorTitle">アイコンカラー</sys:String>
+    <sys:String x:Key="Opacity">不透明度</sys:String>
+    <sys:String x:Key="Apply">適用</sys:String>
 </ResourceDictionary>
