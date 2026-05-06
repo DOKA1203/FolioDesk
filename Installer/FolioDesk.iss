@@ -1,9 +1,13 @@
 #define MyAppName "FolioDesk"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion GetStringParam("AppVersion", "1.0.0")
 #define MyAppPublisher "FolioDesk"
 #define MyAppExeName "FolioDesk.exe"
-#define MyAppSourceDir "D:\Projects\DOKA\FolioDesk\FolioDesk\bin\Release\net10.0-windows\publish\win-x64"
-#define MyAppIcon "D:\Projects\DOKA\FolioDesk\Installer\ICO.ico"
+
+#define MyAppSourceDir GetStringParam("PublishDir", ".")
+#define MyOutputDir GetStringParam("OutputDir", ".")
+#define MyRuntime GetStringParam("RuntimeIdentifier", "win-x64")
+
+#define MyAppIcon "ICO.ico"
 
 [Setup]
 AppId={40DF4033-CCC5-4A03-AB80-C13323DF6D0E}
@@ -13,8 +17,10 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\{#MyAppName}
 DisableDirPage=yes
 DefaultGroupName={#MyAppName}
-OutputDir=D:\Projects\DOKA\FolioDesk\Installer
-OutputBaseFilename=FolioDesk_Setup
+
+OutputDir={#MyOutputDir}
+OutputBaseFilename=FolioDesk_{#MyRuntime}
+
 SetupIconFile={#MyAppIcon}
 Compression=lzma2
 SolidCompression=yes
@@ -25,15 +31,13 @@ PrivilegesRequired=lowest
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-Source: "{#MyAppSourceDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyAppSourceDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{#MyAppIcon}"
-Name: "{group}\{#MyAppName} 제거"; Filename: "{uninstallexe}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "FolioDesk 실행"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "실행"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
