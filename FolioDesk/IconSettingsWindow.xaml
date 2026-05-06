@@ -12,7 +12,7 @@
             <!-- 타이틀바 -->
             <Grid Height="36" Margin="0,0,0,12"
                   MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <TextBlock Text="아이콘 색상" Foreground="White"
+                <TextBlock Text="{DynamicResource IconColorTitle}" Foreground="White"
                            FontWeight="Bold" FontSize="14"
                            VerticalAlignment="Center"/>
                 <Button Content="✕" HorizontalAlignment="Right"
@@ -113,7 +113,7 @@
             <!-- 투명도 슬라이더 -->
             <StackPanel>
                 <DockPanel Margin="0,0,0,4">
-                    <TextBlock Text="투명도" Foreground="#AAAAAA"
+                    <TextBlock Text="{DynamicResource Opacity}" Foreground="#AAAAAA"
                                FontSize="12" VerticalAlignment="Center"
                                DockPanel.Dock="Left"/>
                     <TextBlock x:Name="OpacityLabel" Foreground="White"
@@ -129,7 +129,7 @@
 
             <!-- 적용 버튼 -->
             <Button x:Name="ApplyButton"
-                    Content="적용" Width="160" Height="38"
+                    Content="{DynamicResource Apply}" Width="160" Height="38"
                     Margin="0,20,0,0" HorizontalAlignment="Center"
                     Click="Apply_Click" Foreground="White"
                     FontSize="14" FontWeight="Bold" BorderThickness="0">
