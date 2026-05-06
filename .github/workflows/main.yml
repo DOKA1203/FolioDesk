@@ -28,7 +28,7 @@ jobs:
           include-prerelease: true
 
       - name: Restore
-        run: msbuild ${{ env.PROJECT_PATH }} -t:restore
+        run: dotnet restore ${{ env.PROJECT_PATH }} --runtime ${{ matrix.runtime }}
 
       - name: Build
         run: msbuild ${{ env.PROJECT_PATH }} /p:Configuration=Release
@@ -58,19 +58,21 @@ jobs:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
 
-      - name: Restore
-        run: msbuild ${{ env.PROJECT_PATH }} -t:restore
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }} --runtime ${{ matrix.runtime }}
 
-      - name: Publish
+      # 2. 빌드 및 게시는 MSBuild로 진행 (COM 참조 해결)
+      - name: Build and Publish
         run: >
           msbuild ${{ env.PROJECT_PATH }}
           /p:Configuration=Release
           /p:RuntimeIdentifier=${{ matrix.runtime }}
-          /p:PublishDir="${{ github.workspace }}\publish\${{ matrix.runtime }}"
+          /p:PublishDir="${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}"
           /t:Publish
           /p:SelfContained=true
           /p:PublishSingleFile=true
           /p:IncludeNativeLibrariesForSelfExtract=true
+          /p:NoRestore=true
 
       - name: Install Inno Setup
         run: choco install innosetup --version=6.2.2 --yes
