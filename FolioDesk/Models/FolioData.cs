@@ -7,6 +7,9 @@ namespace FolioDesk.Models;
 public class FolioDataManager {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private FolioData Data { get; } = LoadData();
+    private static string DataPath => Path.Combine(App.DataFolder, "folio.json");
+    private static string BackupPath => Path.Combine(App.DataFolder, "folio.json.bak");
+    private static string TempPath => Path.Combine(App.DataFolder, "folio.json.tmp");
 
     public FolioDataManager() {
 
@@ -81,16 +84,82 @@ public class FolioDataManager {
     }
 
     private static FolioData LoadData() {
-        var path = Path.Combine(App.DataFolder, "folio.json");
-        if (!File.Exists(path)) return new FolioData();
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<FolioData>(json) ?? new FolioData();
+        if (TryLoadDataFile(DataPath, out var data)) {
+            return data;
+        }
+
+        if (TryLoadDataFile(BackupPath, out var backupData)) {
+            TryRestoreBackup();
+            return backupData;
+        }
+
+        return new FolioData();
     }
 
     private void SaveData() {
         Directory.CreateDirectory(App.DataFolder);
         var json = JsonSerializer.Serialize(Data, Options);
-        File.WriteAllText(Path.Combine(App.DataFolder, "folio.json"), json);
+        WriteAllTextDurable(TempPath, json);
+
+        try {
+            if (File.Exists(DataPath)) {
+                File.Replace(TempPath, DataPath, BackupPath, ignoreMetadataErrors: true);
+            }
+            else {
+                File.Move(TempPath, DataPath, overwrite: true);
+            }
+        }
+        finally {
+            TryDeleteTempFile();
+        }
+    }
+
+    private static bool TryLoadDataFile(string path, out FolioData data) {
+        data = new FolioData();
+        if (!File.Exists(path)) return false;
+
+        try {
+            var json = File.ReadAllText(path);
+            data = JsonSerializer.Deserialize<FolioData>(json) ?? new FolioData();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
+            Console.Error.WriteLine($"Failed to load data file '{path}': {ex.Message}");
+            return false;
+        }
+    }
+
+    private static void TryRestoreBackup() {
+        try {
+            Directory.CreateDirectory(App.DataFolder);
+            File.Copy(BackupPath, DataPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            Console.Error.WriteLine($"Failed to restore backup data file: {ex.Message}");
+        }
+    }
+
+    private static void TryDeleteTempFile() {
+        try {
+            if (File.Exists(TempPath)) File.Delete(TempPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            Console.Error.WriteLine($"Failed to delete temp data file: {ex.Message}");
+        }
+    }
+
+    private static void WriteAllTextDurable(string path, string contents) {
+        using var stream = new FileStream(
+            path,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 4096,
+            options: FileOptions.WriteThrough);
+        using var writer = new StreamWriter(stream);
+        writer.Write(contents);
+        writer.Flush();
+        stream.Flush(flushToDisk: true);
     }
 }
 
