@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```powershell
 # Build
-dotnet build FolioDesk/FolioDesk.csproj
+& 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe' 'FolioDesk\FolioDesk.csproj' /t:Restore,Build /p:Configuration=Release /m
 
 # Run (main manager UI)
 dotnet run --project FolioDesk/FolioDesk.csproj

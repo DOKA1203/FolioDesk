@@ -186,10 +186,13 @@ public static class IconExtractor
 
         try
         {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(filePath);
+            WshShell? shell = null;
+            IWshShortcut? shortcut = null;
             try
             {
+                shell = new WshShell();
+                shortcut = (IWshShortcut)shell.CreateShortcut(filePath);
+
                 // 1순위: IconLocation — 런처 기반 앱(예: 발로란트)은 여기에
                 //         실제 아이콘 경로와 인덱스가 명시됩니다.
                 string iconLocation = shortcut.IconLocation;
@@ -212,8 +215,8 @@ public static class IconExtractor
             }
             finally
             {
-                Marshal.FinalReleaseComObject(shortcut);
-                Marshal.FinalReleaseComObject(shell);
+                ReleaseComObject(shortcut);
+                ReleaseComObject(shell);
             }
         }
         catch (Exception ex)
@@ -222,6 +225,12 @@ public static class IconExtractor
         }
 
         return new IconSource(filePath);
+    }
+
+    private static void ReleaseComObject(object? comObject)
+    {
+        if (comObject is not null && Marshal.IsComObject(comObject))
+            Marshal.FinalReleaseComObject(comObject);
     }
 
     /// <summary>
