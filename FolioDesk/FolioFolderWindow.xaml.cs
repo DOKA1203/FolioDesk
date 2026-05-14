@@ -11,6 +11,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using FolioDesk.Icons;
 using FolioDesk.Models;
+using FolioDesk.Services;
 using FolioDesk.ShortCuts;
 
 
@@ -177,10 +178,12 @@ public partial class FolioFolderWindow : Window {
     private void ExtractToDesktop(AppIcon icon) {
         try {
             var src = icon.LnkPath;
+            string? dest = null;
             if (File.Exists(src)) {
                 var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                var dest = GetUniqueDesktopPath(desktop, Path.GetFileName(src));
+                dest = GetUniqueDesktopPath(desktop, Path.GetFileName(src));
                 File.Copy(src, dest, overwrite: false);
+                AppLogger.Info($"Copied item to desktop. FolderId={_folderId}, Source='{src}', Destination='{dest}'.");
             }
 
             App.DataManager.RemoveFileFromFolder(_folderId, icon.Item);
@@ -191,9 +194,10 @@ public partial class FolioFolderWindow : Window {
 
             ApplyContentWidth();
             Width = AppFolderPanel.Width + FramePadding;
+            AppLogger.Info($"Extracted item from folder to desktop. FolderId={_folderId}, Name='{icon.Name}', Destination='{dest ?? "<missing source>"}'.");
         }
         catch (Exception ex) {
-            Console.WriteLine($"Extract to desktop failed: {ex.Message}");
+            AppLogger.Error($"Failed to extract '{icon.Name}' from folder {_folderId} to desktop.", ex);
         }
     }
 

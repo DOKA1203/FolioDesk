@@ -1,7 +1,6 @@
 ﻿namespace FolioDesk.Icons;
 
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -11,6 +10,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Xml.Linq;
+using FolioDesk.Services;
 using IWshRuntimeLibrary;
 using Microsoft.Win32;
 
@@ -148,6 +148,7 @@ public static class IconExtractor
 
         var source = GetIcon(filePath);
         WritePng(source, savePath);
+        AppLogger.Info($"Saved icon PNG. Source='{filePath}', Destination='{savePath}'.");
     }
 
     /// <summary>
@@ -221,7 +222,7 @@ public static class IconExtractor
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"바로가기 분석 실패: {ex.Message}");
+            AppLogger.Warning($"Failed to resolve shortcut '{filePath}': {ex.Message}");
         }
 
         return new IconSource(filePath);
@@ -268,7 +269,7 @@ public static class IconExtractor
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"UWP 아이콘 해석 실패: {ex.Message}");
+            AppLogger.Warning($"Failed to resolve UWP icon for '{lnkPath}': {ex.Message}");
             return null;
         }
     }
@@ -380,7 +381,7 @@ public static class IconExtractor
             }
         }
         catch (Exception ex) {
-            Debug.WriteLine($"Manifest 파싱 실패: {ex.Message}");
+            AppLogger.Warning($"Failed to parse manifest '{manifestPath}': {ex.Message}");
         }
 
         return null;
@@ -443,7 +444,7 @@ public static class IconExtractor
                 var bitmap = TryGetIconFromImageList(iconIndex, size);
                 if (bitmap != null)
                 {
-                    Debug.WriteLine($"아이콘 추출 성공 (SHIL={size}): {source.FilePath}");
+                    AppLogger.Info($"Icon extracted with SHIL={size}: {source.FilePath}");
                     return bitmap;
                 }
             }
@@ -465,7 +466,7 @@ public static class IconExtractor
             SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
 
         if (result == 0) {
-            Debug.WriteLine($"SHGetFileInfo(SYSICONINDEX) 실패: {filePath}");
+            AppLogger.Warning($"SHGetFileInfo(SYSICONINDEX) failed: {filePath}");
             return -1;
         }
 
@@ -509,7 +510,7 @@ public static class IconExtractor
             }
         }
         catch (Exception ex) {
-            Debug.WriteLine($"GetSystemIconIndexByFileIndex 실패: {ex.Message}");
+            AppLogger.Warning($"GetSystemIconIndexByFileIndex failed for '{filePath}': {ex.Message}");
             return GetSystemIconIndex(filePath);
         }
     }
@@ -543,7 +544,7 @@ public static class IconExtractor
             }
         }
         catch (Exception ex) {
-            Debug.WriteLine($"ImageList(SHIL={shilSize}) 추출 실패: {ex.Message}");
+            AppLogger.Warning($"ImageList extraction failed. SHIL={shilSize}, IconIndex={iconIndex}: {ex.Message}");
             return null;
         }
     }
@@ -559,7 +560,7 @@ public static class IconExtractor
             return CreateFrozenBitmapSource(icon.Handle);
         }
         catch (Exception ex) {
-            Debug.WriteLine($"ExtractAssociatedIcon 실패: {ex.Message}");
+            AppLogger.Warning($"ExtractAssociatedIcon failed for '{filePath}': {ex.Message}");
             return null;
         }
     }
@@ -585,7 +586,7 @@ public static class IconExtractor
             return image;
         }
         catch (Exception ex) {
-            Debug.WriteLine($"이미지 파일 로드 실패: {ex.Message}");
+            AppLogger.Warning($"Failed to load image file '{imagePath}': {ex.Message}");
             return null;
         }
     }

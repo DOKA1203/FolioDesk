@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using FolioDesk.Icons;
+using FolioDesk.Services;
 using FolioDesk.ShortCuts;
 
 namespace FolioDesk;
@@ -145,6 +146,7 @@ public partial class IconSettingsWindow : Window {
         App.DataManager.UpdateFolderColor(_folderId, $"#{alpha:X2}{color.R:X2}{color.G:X2}{color.B:X2}");
         var icoName = IconGenerator.GenerateIcon(_folderId);
         ShortCutManager.UpdateShortcut(_folderId, icoName);
+        AppLogger.Info($"Applied icon settings. FolderId={_folderId}, Color='#{alpha:X2}{color.R:X2}{color.G:X2}{color.B:X2}', Icon='{icoName}.ico'.");
         Close();
     }
 

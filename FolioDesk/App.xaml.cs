@@ -16,7 +16,12 @@ namespace FolioDesk;
 public partial class App : Application {
     public static readonly string Version = "v1.0.0";
     public static readonly string DataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FolioDesk");
-    public static readonly FolioDataManager DataManager = new();
+    public static readonly FolioDataManager DataManager = CreateDataManager();
+
+    private static FolioDataManager CreateDataManager() {
+        AppLogger.Initialize(DataFolder);
+        return new FolioDataManager();
+    }
     
     [DllImport("user32.dll")]
     private static extern bool GetCursorPos(out POINT lpPoint);
@@ -49,23 +54,27 @@ public partial class App : Application {
         };
 
         window.Show();
+        AppLogger.Info($"Folder window shown. FolderId={folderId}, Cursor=({cursor.X},{cursor.Y}).");
     }
 
     protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
         LocalizationService.Initialize();
+        AppLogger.Info($"Starting FolioDesk {Version}. Args: {e.Args.Length}");
 
         switch (e.Args.Length) {
             case 0:
                 // 인수 없음: 메인 관리 창 표시 (폴더 목록 관리 UI)
                 var main = new MainWindow();
                 main.Show();
+                AppLogger.Info("Main window shown.");
                 break;
 
             case 1:
                 // 인수 1개: args[0] = 폴더 ID
                 // 해당 폴더를 커서 위치에 팝업으로 표시
                 ShowWindowAtCursor(int.Parse(e.Args[0]));
+                AppLogger.Info($"Folder popup requested. FolderId={e.Args[0]}.");
                 break;
 
             case 2:
@@ -82,7 +91,7 @@ public partial class App : Application {
                 
                 var folder = DataManager.GetFolioFolder(folderId);
                 if (folder == null) {
-                    Console.WriteLine($"폴더 ID {folderId}를 찾을 수 없습니다.");
+                    AppLogger.Warning($"Folder ID {folderId} was not found while adding '{addedApplication}'.");
                     return;
                 }
                 
@@ -98,9 +107,10 @@ public partial class App : Application {
                     var icoName = IconGenerator.GenerateIcon(folderId);
                     
                     ShortCutManager.UpdateShortcut(folderId, icoName);
+                    AppLogger.Info($"Added application to folder. FolderId={folderId}, Name='{appName}', Source='{addedApplication}', Copy='{copyPath}'.");
                 }
                 catch (Exception ex) {
-                    Console.WriteLine($"오류 발생: {ex.Message}");
+                    AppLogger.Error($"Failed to add application '{addedApplication}' to folder {folderId}.", ex);
                 }
                 
                 

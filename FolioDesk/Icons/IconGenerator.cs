@@ -2,6 +2,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using FolioDesk.Services;
 
 namespace FolioDesk.Icons;
 
@@ -28,6 +29,7 @@ public static class IconGenerator {
         var fileName = Guid.NewGuid().ToString("N");
         var icoPath = Path.Combine(iconsDir, fileName + ".ico");
         SaveAsIco(background, icoPath);
+        AppLogger.Info($"Generated folder icon. FolderId={folderId}, Icon='{icoPath}', SourceIconCount={filePaths.Count}.");
 
         return fileName;
     }
@@ -108,7 +110,7 @@ public static class IconGenerator {
         var count = Math.Min(filePaths.Count, positions.Length);
         for (var i = 0; i < count; i++) {
             if (!File.Exists(filePaths[i])) {
-                Console.Error.WriteLine($"Icon file not found, skipping: {filePaths[i]}");
+                AppLogger.Warning($"Icon file not found, skipping: {filePaths[i]}");
                 continue;
             }
 
@@ -120,11 +122,16 @@ public static class IconGenerator {
 
     private static void EnsureCleanDirectory(string dir) {
         if (Directory.Exists(dir)) {
-            foreach (var old in Directory.GetFiles(dir, "*.ico"))
+            var deleted = 0;
+            foreach (var old in Directory.GetFiles(dir, "*.ico")) {
                 File.Delete(old);
+                deleted++;
+            }
+            AppLogger.Info($"Cleaned icon directory. Directory='{dir}', DeletedIcoCount={deleted}.");
         }
         else {
             Directory.CreateDirectory(dir);
+            AppLogger.Info($"Created icon directory. Directory='{dir}'.");
         }
     }
 

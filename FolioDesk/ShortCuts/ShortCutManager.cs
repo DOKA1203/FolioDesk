@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
 using FolioDesk.Icons;
+using FolioDesk.Services;
 using IWshRuntimeLibrary;
 
 namespace FolioDesk.ShortCuts;
@@ -26,9 +27,10 @@ public static class ShortCutManager {
             
             shortcut.IconLocation = Path.Combine(App.DataFolder, "icons", id.ToString(), $"{icoName}.ico");
             shortcut.Save();
+            AppLogger.Info($"Created shortcut. FolderId={id}, Name='{shortcutName}', Target='{targetPath}', Icon='{icoName}.ico'.");
         }
         catch (Exception ex) {
-            Console.WriteLine($"Error creating shortcut: {ex.Message}");
+            AppLogger.Error($"Failed to create shortcut '{shortcutName}' for target '{targetPath}'.", ex);
         }
         finally {
             ReleaseComObject(shortcut);
@@ -49,15 +51,17 @@ public static class ShortCutManager {
                     shortcut.IconLocation = Path.Combine(App.DataFolder, "icons", $"{folderId}", $"{icoName}.ico");
                     shortcut.Save();
                     SHChangeNotify(0x8000000, 0x1000, IntPtr.Zero, IntPtr.Zero);
+                    AppLogger.Info($"Updated shortcut icon. FolderId={folderId}, Link='{link}', Icon='{icoName}.ico'.");
                     return;
                 }
                 catch (Exception ex) {
-                    Console.WriteLine($"Error reading shortcut '{link}': {ex.Message}");
+                    AppLogger.Warning($"Failed to read shortcut '{link}': {ex.Message}");
                 }
                 finally {
                     ReleaseComObject(shortcut);
                 }
             }
+            AppLogger.Warning($"No matching shortcut found to update. FolderId={folderId}, Icon='{icoName}.ico'.");
         }
         finally {
             ReleaseComObject(shell);

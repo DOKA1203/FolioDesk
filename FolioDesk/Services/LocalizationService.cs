@@ -60,7 +60,9 @@ public static class LocalizationService
         try {
             Directory.CreateDirectory(Path.GetDirectoryName(_settingsPath)!);
             File.WriteAllText(_settingsPath, lang);
-        } catch { }
+        } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            AppLogger.Warning($"Failed to save language setting '{lang}': {ex.Message}");
+        }
     }
 
     public static string Get(string key) =>

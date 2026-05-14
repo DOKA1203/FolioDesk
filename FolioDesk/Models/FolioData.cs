@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FolioDesk.Services;
 
 namespace FolioDesk.Models;
 
@@ -25,6 +26,7 @@ public class FolioDataManager {
         Data.Folders.Add(folder);
         SaveData();
         Directory.CreateDirectory(Path.Combine(App.DataFolder, "icons", $"{folder.Id}"));
+        AppLogger.Info($"Created folder. Id={folder.Id}, Name='{folder.Name}'.");
 
         return folder;
     }
@@ -37,6 +39,7 @@ public class FolioDataManager {
         folder.Files.Add(item);
         
         SaveData();
+        AppLogger.Info($"Added file to folder. FolderId={folderId}, Name='{item.Name}', Path='{item.Path}'.");
     }
     
 
@@ -45,8 +48,12 @@ public class FolioDataManager {
     }
 
     public void DeleteFolioFolder(int folderId) {
-        Data.Folders.RemoveAll(f => f.Id == folderId);
+        var removed = Data.Folders.RemoveAll(f => f.Id == folderId);
         SaveData();
+        if (removed == 0)
+            AppLogger.Warning($"DeleteFolioFolder: FolderId={folderId} not found.");
+        else
+            AppLogger.Info($"Deleted folder. FolderId={folderId}.");
     }
 
     public void ReorderFiles(int folderId, IList<FolioItem> orderedItems) {
@@ -57,6 +64,7 @@ public class FolioDataManager {
             orderedItems[i].Order = i;
         }
         SaveData();
+        AppLogger.Info($"Reordered files. FolderId={folderId}, Count={orderedItems.Count}.");
     }
 
     public void UpdateFolderColor(int folderId, string argbHex) {
@@ -64,6 +72,7 @@ public class FolioDataManager {
         if (folder == null) return;
         folder.IconColor = argbHex;
         SaveData();
+        AppLogger.Info($"Updated folder color. FolderId={folderId}, Color='{argbHex}'.");
     }
 
     public void RemoveFileFromFolder(int folderId, FolioItem item) {
@@ -75,6 +84,7 @@ public class FolioDataManager {
             folder.Files[i].Order = i;
         }
         SaveData();
+        AppLogger.Info($"Removed file from folder. FolderId={folderId}, Name='{item.Name}', Path='{item.Path}'.");
     }
 
     private int GetLastId() {
@@ -85,14 +95,17 @@ public class FolioDataManager {
 
     private static FolioData LoadData() {
         if (TryLoadDataFile(DataPath, out var data)) {
+            AppLogger.Info($"Loaded data file '{DataPath}'. FolderCount={data.Folders.Count}.");
             return data;
         }
 
         if (TryLoadDataFile(BackupPath, out var backupData)) {
             TryRestoreBackup();
+            AppLogger.Info($"Loaded backup data file '{BackupPath}'. FolderCount={backupData.Folders.Count}.");
             return backupData;
         }
 
+        AppLogger.Info("No valid data file found. Starting with empty data.");
         return new FolioData();
     }
 
@@ -108,6 +121,7 @@ public class FolioDataManager {
             else {
                 File.Move(TempPath, DataPath, overwrite: true);
             }
+            AppLogger.Info($"Saved data file '{DataPath}'. FolderCount={Data.Folders.Count}.");
         }
         finally {
             TryDeleteTempFile();
@@ -124,7 +138,7 @@ public class FolioDataManager {
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
-            Console.Error.WriteLine($"Failed to load data file '{path}': {ex.Message}");
+            AppLogger.Error($"Failed to load data file '{path}'.", ex);
             return false;
         }
     }
@@ -133,9 +147,10 @@ public class FolioDataManager {
         try {
             Directory.CreateDirectory(App.DataFolder);
             File.Copy(BackupPath, DataPath, overwrite: true);
+            AppLogger.Info($"Restored data file from backup '{BackupPath}'.");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
-            Console.Error.WriteLine($"Failed to restore backup data file: {ex.Message}");
+            AppLogger.Error("Failed to restore backup data file.", ex);
         }
     }
 
@@ -144,7 +159,7 @@ public class FolioDataManager {
             if (File.Exists(TempPath)) File.Delete(TempPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
-            Console.Error.WriteLine($"Failed to delete temp data file: {ex.Message}");
+            AppLogger.Warning($"Failed to delete temp data file: {ex.Message}");
         }
     }
 
