@@ -84,30 +84,32 @@ public partial class App : Application {
                 var addedApplication = e.Args[1]!;
                 var folderId = int.Parse(e.Args[0]!);
                 
-                var appName = Path.GetFileNameWithoutExtension(addedApplication);
-                var pngPath = Path.Combine(DataFolder, "icons", $"{folderId}", appName, "icon.png");
-                var copyPath = Path.Combine(DataFolder, "icons", $"{folderId}", appName, Path.GetFileName(addedApplication));
-                Directory.CreateDirectory(Path.Combine(DataFolder, "icons", $"{folderId}", appName));
-                
                 var folder = DataManager.GetFolioFolder(folderId);
                 if (folder == null) {
                     AppLogger.Warning($"Folder ID {folderId} was not found while adding '{addedApplication}'.");
                     return;
                 }
-                
-                DataManager.AddFileToFolder(folderId, new FolioItem {
-                    Icon = pngPath,
-                    Name = appName,
-                    Path = copyPath
-                });
+
+                var appName = GetUniqueAppName(folder, Path.GetFileNameWithoutExtension(addedApplication));
+                var appDirectory = Path.Combine(DataFolder, "icons", $"{folderId}", appName);
+                var pngPath = Path.Combine(appDirectory, "icon.png");
+                var storedPath = Path.Combine(appDirectory, Path.GetFileName(addedApplication));
+                Directory.CreateDirectory(appDirectory);
                 
                 try {
-                    File.Copy(addedApplication, copyPath, true);
-                    IconExtractor.SaveIconAsPng(addedApplication, pngPath);
+                    var movedFromDesktop = MoveOrCopyToFolderStorage(addedApplication, storedPath);
+                    IconExtractor.SaveIconAsPng(storedPath, pngPath);
+
+                    DataManager.AddFileToFolder(folderId, new FolioItem {
+                        Icon = pngPath,
+                        Name = appName,
+                        Path = storedPath
+                    });
+
                     var icoName = IconGenerator.GenerateIcon(folderId);
                     
                     ShortCutManager.UpdateShortcut(folderId, icoName);
-                    AppLogger.Info($"Added application to folder. FolderId={folderId}, Name='{appName}', Source='{addedApplication}', Copy='{copyPath}'.");
+                    AppLogger.Info($"Added application to folder. FolderId={folderId}, Name='{appName}', Source='{addedApplication}', Stored='{storedPath}', MovedFromDesktop={movedFromDesktop}.");
                 }
                 catch (Exception ex) {
                     AppLogger.Error($"Failed to add application '{addedApplication}' to folder {folderId}.", ex);
@@ -118,5 +120,45 @@ public partial class App : Application {
                 Shutdown();
                 break;
         }
+    }
+
+    private static bool MoveOrCopyToFolderStorage(string sourcePath, string destinationPath) {
+        if (IsInDesktopDirectory(sourcePath)) {
+            File.Move(sourcePath, destinationPath, overwrite: false);
+            return true;
+        }
+
+        File.Copy(sourcePath, destinationPath, overwrite: false);
+        return false;
+    }
+
+    private static string GetUniqueAppName(FolioFolder folder, string baseName) {
+        var usedNames = folder.Files.Select(file => file.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var folderIconDirectory = Path.Combine(DataFolder, "icons", $"{folder.Id}");
+
+        var candidate = baseName;
+        var counter = 2;
+        while (usedNames.Contains(candidate) || Directory.Exists(Path.Combine(folderIconDirectory, candidate))) {
+            candidate = $"{baseName} ({counter})";
+            counter++;
+        }
+
+        return candidate;
+    }
+
+    private static bool IsInDesktopDirectory(string path) {
+        var sourceDirectory = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (string.IsNullOrWhiteSpace(sourceDirectory)) return false;
+
+        return IsSameDirectory(sourceDirectory, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)) ||
+               IsSameDirectory(sourceDirectory, Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory));
+    }
+
+    private static bool IsSameDirectory(string left, string right) {
+        if (string.IsNullOrWhiteSpace(right)) return false;
+
+        var normalizedLeft = Path.TrimEndingDirectorySeparator(Path.GetFullPath(left));
+        var normalizedRight = Path.TrimEndingDirectorySeparator(Path.GetFullPath(right));
+        return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
     }
 }

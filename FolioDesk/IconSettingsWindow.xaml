@@ -113,6 +113,7 @@
             <!-- 투명도 슬라이더 -->
             <StackPanel>
                 <DockPanel Margin="0,0,0,4">
+                    
                     <TextBlock Text="{DynamicResource Opacity}" Foreground="#AAAAAA"
                                FontSize="12" VerticalAlignment="Center"
                                DockPanel.Dock="Left"/>
