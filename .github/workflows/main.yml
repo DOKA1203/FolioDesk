@@ -25,8 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: microsoft/setup-msbuild@v2
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -45,16 +43,16 @@ jobs:
 
       # 2. Build 및 Publish
       - name: Build and Publish
-        run: >
-          msbuild ${{ env.PROJECT_PATH }}
-          /p:Configuration=Release
-          /p:RuntimeIdentifier=${{ matrix.runtime }}
-          /p:PublishDir="${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}"
-          /t:Publish
-          /p:SelfContained=true
-          /p:PublishSingleFile=true
-          /p:IncludeNativeLibrariesForSelfExtract=true
-          /p:NoRestore=true
+        shell: pwsh
+        run: |
+          dotnet publish "${{ env.PROJECT_PATH }}" `
+            --configuration Release `
+            --runtime "${{ matrix.runtime }}" `
+            --self-contained true `
+            --no-restore `
+            --output "${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}" `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true
 
       - name: Install Inno Setup
         run: choco install innosetup --yes
