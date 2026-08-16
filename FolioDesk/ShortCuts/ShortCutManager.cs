@@ -1,36 +1,36 @@
-﻿using System.IO;
+using System.IO;
 using System.Runtime.InteropServices;
-using FolioDesk.Icons;
+using FolioDesk.Application.Abstractions;
 using FolioDesk.Services;
-using IWshRuntimeLibrary;
 
 namespace FolioDesk.ShortCuts;
 
-public static class ShortCutManager {
+public sealed class WindowsShortcutService(string dataFolder) : IShortcutService {
     [DllImport("Shell32.dll")]
-    private static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem1, IntPtr dwItem2);
-    private static readonly string DesktopDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-    
-    public static void CreateShortcut(string targetPath,int id, string shortcutName) {
-        WshShell? shell = null;
-        IWshShortcut? shortcut = null;
+    private static extern void SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
+
+    private static readonly string DesktopDirectory =
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+
+    public void CreateFolderShortcut(
+        string targetPath,
+        int folderId,
+        string shortcutName,
+        string iconName) {
+        object? shell = null;
+        object? shortcut = null;
         try {
-            shell = new WshShell();
-            shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(DesktopDirectory, $"{shortcutName}.lnk"));
-            
-            shortcut.TargetPath = targetPath;
-            shortcut.Arguments = id.ToString();
-            shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath); // Optional: Set working directory
-            shortcut.Description = $"FolioFolder id {id}"; // Optional: Set description
-            
-            var icoName = IconGenerator.GenerateIcon(id);
-            
-            shortcut.IconLocation = Path.Combine(App.DataFolder, "icons", id.ToString(), $"{icoName}.ico");
-            shortcut.Save();
-            AppLogger.Info($"Created shortcut. FolderId={id}, Name='{shortcutName}', Target='{targetPath}', Icon='{icoName}.ico'.");
-        }
-        catch (Exception ex) {
-            AppLogger.Error($"Failed to create shortcut '{shortcutName}' for target '{targetPath}'.", ex);
+            shell = CreateShell();
+            dynamic shellApi = shell;
+            shortcut = shellApi.CreateShortcut(Path.Combine(DesktopDirectory, $"{shortcutName}.lnk"));
+            dynamic shortcutApi = shortcut;
+            shortcutApi.TargetPath = targetPath;
+            shortcutApi.Arguments = folderId.ToString();
+            shortcutApi.WorkingDirectory = Path.GetDirectoryName(targetPath);
+            shortcutApi.Description = $"FolioFolder id {folderId}";
+            shortcutApi.IconLocation = GetIconPath(folderId, iconName);
+            shortcutApi.Save();
+            AppLogger.Info($"Created shortcut. FolderId={folderId}, Name='{shortcutName}', Target='{targetPath}', Icon='{iconName}.ico'.");
         }
         finally {
             ReleaseComObject(shortcut);
@@ -38,39 +38,49 @@ public static class ShortCutManager {
         }
     }
 
-    public static void UpdateShortcut(int folderId, string icoName) {
-        WshShell? shell = null;
+    public void UpdateFolderShortcut(int folderId, string iconName) {
+        object? shell = null;
         try {
-            shell = new WshShell();
-            var links = Directory.GetFiles(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "*.lnk");
-            foreach (var link in links) {
-                IWshShortcut? shortcut = null;
+            shell = CreateShell();
+            dynamic shellApi = shell;
+            foreach (var link in Directory.GetFiles(DesktopDirectory, "*.lnk")) {
+                object? shortcut = null;
                 try {
-                    shortcut = (IWshShortcut)shell.CreateShortcut(link);
-                    if (shortcut.Arguments != $"{folderId}") continue;
-                    shortcut.IconLocation = Path.Combine(App.DataFolder, "icons", $"{folderId}", $"{icoName}.ico");
-                    shortcut.Save();
-                    SHChangeNotify(0x8000000, 0x1000, IntPtr.Zero, IntPtr.Zero);
-                    AppLogger.Info($"Updated shortcut icon. FolderId={folderId}, Link='{link}', Icon='{icoName}.ico'.");
+                    shortcut = shellApi.CreateShortcut(link);
+                    dynamic shortcutApi = shortcut;
+                    if ((string)shortcutApi.Arguments != folderId.ToString()) continue;
+                    shortcutApi.IconLocation = GetIconPath(folderId, iconName);
+                    shortcutApi.Save();
+                    SHChangeNotify(0x08000000, 0x1000, IntPtr.Zero, IntPtr.Zero);
+                    AppLogger.Info($"Updated shortcut icon. FolderId={folderId}, Link='{link}', Icon='{iconName}.ico'.");
                     return;
                 }
-                catch (Exception ex) {
-                    AppLogger.Warning($"Failed to read shortcut '{link}': {ex.Message}");
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException) {
+                    AppLogger.Warning($"Failed to inspect shortcut '{link}': {ex.Message}");
                 }
                 finally {
                     ReleaseComObject(shortcut);
                 }
             }
-            AppLogger.Warning($"No matching shortcut found to update. FolderId={folderId}, Icon='{icoName}.ico'.");
+            throw new FileNotFoundException($"No desktop shortcut was found for FolioDesk folder {folderId}.");
         }
         finally {
             ReleaseComObject(shell);
         }
     }
 
+    private string GetIconPath(int folderId, string iconName) =>
+        Path.Combine(dataFolder, "icons", folderId.ToString(), $"{iconName}.ico");
+
+    private static object CreateShell() {
+        var shellType = Type.GetTypeFromProgID("WScript.Shell") ??
+                        throw new PlatformNotSupportedException("Windows Script Host is unavailable.");
+        return Activator.CreateInstance(shellType) ??
+               throw new COMException("Windows Script Host could not be created.");
+    }
+
     private static void ReleaseComObject(object? comObject) {
-        if (comObject is not null && Marshal.IsComObject(comObject)) {
+        if (comObject is not null && Marshal.IsComObject(comObject))
             Marshal.FinalReleaseComObject(comObject);
-        }
     }
 }

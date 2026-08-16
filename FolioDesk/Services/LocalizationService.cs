@@ -23,30 +23,30 @@ public static class LocalizationService
 
         var idx = Array.IndexOf(_languages, lang);
         _currentIndex = idx >= 0 ? idx : 0;
-        ApplyLanguage(CurrentLang);
+        ApplyLanguage(CurrentLang, persist: false);
     }
 
     public static void ToggleLanguage()
     {
         _currentIndex = (_currentIndex + 1) % _languages.Length;
-        ApplyLanguage(CurrentLang);
+        ApplyLanguage(CurrentLang, persist: true);
     }
 
     public static void SetLanguage(string lang)
     {
         var idx = Array.IndexOf(_languages, lang);
         _currentIndex = idx >= 0 ? idx : 0;
-        ApplyLanguage(CurrentLang);
+        ApplyLanguage(CurrentLang, persist: true);
     }
 
-    private static void ApplyLanguage(string lang)
+    private static void ApplyLanguage(string lang, bool persist)
     {
         var dict = new ResourceDictionary
         {
             Source = new Uri($"pack://application:,,,/Resources/Strings/{lang}.xaml", UriKind.Absolute)
         };
 
-        var merged = Application.Current.Resources.MergedDictionaries;
+        var merged = System.Windows.Application.Current.Resources.MergedDictionaries;
         for (int i = merged.Count - 1; i >= 0; i--)
         {
             if (merged[i].Source?.ToString().Contains("/Resources/Strings/") == true)
@@ -57,6 +57,8 @@ public static class LocalizationService
         }
         merged.Add(dict);
 
+        if (!persist) return;
+
         try {
             Directory.CreateDirectory(Path.GetDirectoryName(_settingsPath)!);
             File.WriteAllText(_settingsPath, lang);
@@ -66,5 +68,5 @@ public static class LocalizationService
     }
 
     public static string Get(string key) =>
-        Application.Current.TryFindResource(key) as string ?? key;
+        System.Windows.Application.Current.TryFindResource(key) as string ?? key;
 }

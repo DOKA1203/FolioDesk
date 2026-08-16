@@ -2,34 +2,37 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using FolioDesk.Models;
 using FolioDesk.Services;
 
 namespace FolioDesk.Icons;
 
 public static class IconGenerator {
-    public static string GenerateIcon(int folderId, Color? backgroundColor = null) {
-        var iconsDir = Path.Combine(App.DataFolder, "icons", $"{folderId}");
-        var filePaths = GetFilePaths(folderId);
+    public static string GenerateIcon(FolioFolder folder, string dataFolder, Color? backgroundColor = null) {
+        var iconsDir = Path.Combine(dataFolder, "icons", folder.Id.ToString());
+        var filePaths = folder.Files
+            .OrderBy(item => item.Order)
+            .Select(item => item.Icon)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToList();
 
         Color bgColor;
         if (backgroundColor.HasValue) {
             bgColor = backgroundColor.Value;
         } else {
-            var folder = App.DataManager.GetFolioFolder(folderId);
-            bgColor = ParseIconColor(folder?.IconColor);
+            bgColor = ParseIconColor(folder.IconColor);
         }
 
         using var background = CreateBaseImage(bgColor);
         DrawIconsOnBackground(background, filePaths);
 
-        // 기존 .ico 제거 후 디렉토리 보장
-        EnsureCleanDirectory(iconsDir);
+        Directory.CreateDirectory(iconsDir);
 
         // Guid 기반으로 충돌 없는 파일명 생성
         var fileName = Guid.NewGuid().ToString("N");
         var icoPath = Path.Combine(iconsDir, fileName + ".ico");
         SaveAsIco(background, icoPath);
-        AppLogger.Info($"Generated folder icon. FolderId={folderId}, Icon='{icoPath}', SourceIconCount={filePaths.Count}.");
+        AppLogger.Info($"Generated folder icon. FolderId={folder.Id}, Icon='{icoPath}', SourceIconCount={filePaths.Count}.");
 
         return fileName;
     }
@@ -74,21 +77,6 @@ public static class IconGenerator {
         return path;
     }
 
-    private static List<string> GetFilePaths(int folderId) {
-        var folder = App.DataManager.GetFolioFolder(folderId);
-
-        if (folder is null) {
-            // Console 대신 예외로 명확하게 알림
-            throw new InvalidOperationException(
-                $"Folder with ID {folderId} not found or has no files.");
-        }
-
-        return folder.Files
-            .Select(f => f.Icon)
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .ToList();
-    }
-
     private static void DrawIconsOnBackground(Bitmap background, List<string> filePaths) {
         const int iconSize = 110;
         const int padding = 10;
@@ -120,19 +108,32 @@ public static class IconGenerator {
         }
     }
 
-    private static void EnsureCleanDirectory(string dir) {
-        if (Directory.Exists(dir)) {
-            var deleted = 0;
-            foreach (var old in Directory.GetFiles(dir, "*.ico")) {
-                File.Delete(old);
+    public static void CleanupFolderIcons(string dataFolder, int folderId, string iconNameToKeep) {
+        var directory = Path.Combine(dataFolder, "icons", folderId.ToString());
+        if (!Directory.Exists(directory)) return;
+
+        var keepPath = Path.Combine(directory, $"{iconNameToKeep}.ico");
+        var deleted = 0;
+        string[] oldIconPaths;
+        try {
+            oldIconPaths = Directory.GetFiles(directory, "*.ico");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            AppLogger.Warning($"Failed to enumerate old folder icons for {folderId}: {ex.Message}");
+            return;
+        }
+
+        foreach (var oldPath in oldIconPaths) {
+            if (string.Equals(oldPath, keepPath, StringComparison.OrdinalIgnoreCase)) continue;
+            try {
+                File.Delete(oldPath);
                 deleted++;
             }
-            AppLogger.Info($"Cleaned icon directory. Directory='{dir}', DeletedIcoCount={deleted}.");
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+                AppLogger.Warning($"Failed to delete old folder icon '{oldPath}': {ex.Message}");
+            }
         }
-        else {
-            Directory.CreateDirectory(dir);
-            AppLogger.Info($"Created icon directory. Directory='{dir}'.");
-        }
+        AppLogger.Info($"Cleaned folder icons. FolderId={folderId}, DeletedIcoCount={deleted}.");
     }
 
     /// <summary>

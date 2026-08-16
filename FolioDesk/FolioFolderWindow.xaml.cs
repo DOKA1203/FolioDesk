@@ -1,6 +1,5 @@
 
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,10 +8,9 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using FolioDesk.Icons;
+using FolioDesk.Application;
 using FolioDesk.Models;
 using FolioDesk.Services;
-using FolioDesk.ShortCuts;
 
 
 namespace FolioDesk;
@@ -24,6 +22,9 @@ public partial class FolioFolderWindow : Window {
     private const string DragFormat = "FolioDesk.AppIcon";
 
     private readonly int _folderId;
+    private readonly FolderQueryService _queryService;
+    private readonly FolderContentService _contentService;
+    private readonly FolderAppearanceService _appearanceService;
     private readonly ObservableCollection<AppIcon> _appIcons = [];
     private Point _dragStartPoint;
     private Point _grabOffset;
@@ -37,12 +38,27 @@ public partial class FolioFolderWindow : Window {
     private const double FramePadding = 16.0;
     private const int SingleRowMax = 5;
 
-    public FolioFolderWindow(int folderId) {
+    public FolioFolderWindow(int folderId) : this(
+        folderId,
+        App.Composition.CreateFolderQueryService(),
+        App.Composition.CreateFolderContentService(),
+        App.Composition.CreateFolderAppearanceService()) { }
+
+    internal FolioFolderWindow(
+        int folderId,
+        FolderQueryService queryService,
+        FolderContentService contentService,
+        FolderAppearanceService appearanceService) {
+        _queryService = queryService;
+        _contentService = contentService;
+        _appearanceService = appearanceService;
         InitializeComponent();
+        ContentRendered += (_, _) =>
+            AppLogger.Info($"Folder window content rendered. FolderId={folderId}, StartupElapsedMs={App.StartupElapsedMilliseconds}.");
         Deactivated += OtherWindow_Deactivated!;
         _folderId = folderId;
 
-        var folder = App.DataManager.GetFolioFolder(folderId);
+        var folder = _queryService.GetFolder(folderId);
 
         if (folder != null) {
             foreach (var file in folder.Files.OrderBy(f => f.Order)) {
@@ -93,7 +109,7 @@ public partial class FolioFolderWindow : Window {
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e) {
         _settingsOpen = true;
-        var settingsWindow = new IconSettingsWindow(_folderId) {
+        var settingsWindow = new IconSettingsWindow(_folderId, _queryService, _appearanceService) {
             Owner = this,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
@@ -111,6 +127,7 @@ public partial class FolioFolderWindow : Window {
             var bmp = new BitmapImage();
             bmp.BeginInit();
             bmp.UriSource = new Uri(item.Icon, UriKind.Absolute);
+            bmp.DecodePixelWidth = 48;
             bmp.CacheOption = BitmapCacheOption.OnLoad;
             bmp.EndInit();
             bmp.Freeze();
@@ -177,43 +194,16 @@ public partial class FolioFolderWindow : Window {
 
     private void ExtractToDesktop(AppIcon icon) {
         try {
-            var src = icon.LnkPath;
-            string? dest = null;
-            if (File.Exists(src)) {
-                var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                dest = GetUniqueDesktopPath(desktop, Path.GetFileName(src));
-                File.Copy(src, dest, overwrite: false);
-                AppLogger.Info($"Copied item to desktop. FolderId={_folderId}, Source='{src}', Destination='{dest}'.");
-            }
-
-            App.DataManager.RemoveFileFromFolder(_folderId, icon.Item);
+            var destination = _contentService.ExtractToDesktop(_folderId, icon.Item);
             _appIcons.Remove(icon);
-
-            var icoName = IconGenerator.GenerateIcon(_folderId);
-            ShortCutManager.UpdateShortcut(_folderId, icoName);
 
             ApplyContentWidth();
             Width = AppFolderPanel.Width + FramePadding;
-            AppLogger.Info($"Extracted item from folder to desktop. FolderId={_folderId}, Name='{icon.Name}', Destination='{dest ?? "<missing source>"}'.");
+            AppLogger.Info($"Extract UI updated. FolderId={_folderId}, Name='{icon.Name}', Destination='{destination}'.");
         }
         catch (Exception ex) {
             AppLogger.Error($"Failed to extract '{icon.Name}' from folder {_folderId} to desktop.", ex);
         }
-    }
-
-    private static string GetUniqueDesktopPath(string desktopDir, string fileName) {
-        var path = Path.Combine(desktopDir, fileName);
-        if (!File.Exists(path)) return path;
-
-        var name = Path.GetFileNameWithoutExtension(fileName);
-        var ext = Path.GetExtension(fileName);
-        var counter = 2;
-        string candidate;
-        do {
-            candidate = Path.Combine(desktopDir, $"{name} ({counter}){ext}");
-            counter++;
-        } while (File.Exists(candidate));
-        return candidate;
     }
 
     private void StartDragGhost(Border source) {
@@ -271,7 +261,13 @@ public partial class FolioFolderWindow : Window {
         if (oldIndex < 0 || newIndex < 0) return;
 
         _appIcons.Move(oldIndex, newIndex);
-        App.DataManager.ReorderFiles(_folderId, _appIcons.Select(a => a.Item).ToList());
+        try {
+            _contentService.Reorder(_folderId, _appIcons.Select(app => app.Item).ToList());
+        }
+        catch (Exception ex) {
+            _appIcons.Move(newIndex, oldIndex);
+            AppLogger.Error($"Failed to reorder folder {_folderId}.", ex);
+        }
     }
 
     private void Icon_Click(object sender, MouseButtonEventArgs e) {

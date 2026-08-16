@@ -3,14 +3,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using FolioDesk.Icons;
+using FolioDesk.Application;
 using FolioDesk.Services;
-using FolioDesk.ShortCuts;
 
 namespace FolioDesk;
 
 public partial class IconSettingsWindow : Window {
     private readonly int _folderId;
+    private readonly FolderQueryService _queryService;
+    private readonly FolderAppearanceService _appearanceService;
     private double _hue;   // 0–360
     private double _sat;   // 0–1
     private double _val;   // 0–1
@@ -19,7 +20,17 @@ public partial class IconSettingsWindow : Window {
     private bool _updatingFromHsv;
     private readonly GradientStop _svHueStop = new(Colors.Red, 1.0);
 
-    public IconSettingsWindow(int folderId) {
+    public IconSettingsWindow(int folderId) : this(
+        folderId,
+        App.Composition.CreateFolderQueryService(),
+        App.Composition.CreateFolderAppearanceService()) { }
+
+    internal IconSettingsWindow(
+        int folderId,
+        FolderQueryService queryService,
+        FolderAppearanceService appearanceService) {
+        _queryService = queryService;
+        _appearanceService = appearanceService;
         InitializeComponent();
 
         // 브러시를 코드로 생성해 GradientStop을 직접 제어 (XAML 명명 시 frozen 문제 방지)
@@ -31,7 +42,7 @@ public partial class IconSettingsWindow : Window {
         SvHueRect.Fill = hueBrush;
 
         _folderId = folderId;
-        var folder = App.DataManager.GetFolioFolder(folderId);
+        var folder = _queryService.GetFolder(folderId);
         var (rgb, alpha) = ParseFolderColor(folder?.IconColor);
         OpacitySlider.Value = Math.Round(alpha / 255.0 * 100);
         (_hue, _sat, _val) = RgbToHsv(rgb);
@@ -143,11 +154,16 @@ public partial class IconSettingsWindow : Window {
     private void Apply_Click(object sender, RoutedEventArgs e) {
         var color = HsvToRgb(_hue, _sat, _val);
         var alpha = (byte)Math.Round(OpacitySlider.Value / 100.0 * 255);
-        App.DataManager.UpdateFolderColor(_folderId, $"#{alpha:X2}{color.R:X2}{color.G:X2}{color.B:X2}");
-        var icoName = IconGenerator.GenerateIcon(_folderId);
-        ShortCutManager.UpdateShortcut(_folderId, icoName);
-        AppLogger.Info($"Applied icon settings. FolderId={_folderId}, Color='#{alpha:X2}{color.R:X2}{color.G:X2}{color.B:X2}', Icon='{icoName}.ico'.");
-        Close();
+        var argbHex = $"#{alpha:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+        try {
+            var iconName = _appearanceService.ChangeColor(_folderId, argbHex);
+            AppLogger.Info($"Applied icon settings. FolderId={_folderId}, Color='{argbHex}', Icon='{iconName}.ico'.");
+            Close();
+        }
+        catch (Exception ex) {
+            AppLogger.Error($"Failed to apply icon settings for folder {_folderId}.", ex);
+            MessageBox.Show(ex.Message, "FolioDesk", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

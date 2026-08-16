@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```powershell
 # Build
-& 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe' 'FolioDesk\FolioDesk.csproj' /t:Restore,Build /p:Configuration=Release /m
+dotnet build FolioDesk/FolioDesk.csproj -c Release
 
 # Run (main manager UI)
 dotnet run --project FolioDesk/FolioDesk.csproj
@@ -36,11 +36,15 @@ Desktop shortcuts are `.lnk` files that call `FolioDesk.exe <folderId>`.
 
 | Layer | Key Files | Role |
 |---|---|---|
-| UI (WPF, code-behind) | `MainWindow`, `FolioFolderWindow`, `IconSettingsWindow` | All windows use XAML + code-behind, **not MVVM** |
-| Data | `Models/FolioData.cs` | `FolioDataManager` (singleton via `App.DataManager`) — JSON CRUD |
-| Icons | `Icons/IconExtractor.cs`, `Icons/IconGenerator.cs` | Win32 icon extraction; composite folder icon generation |
+| UI (WPF, code-behind) | `MainWindow`, `FolioFolderWindow`, `IconSettingsWindow` | XAML + code-behind for view-specific mouse, animation, and Win32 behavior; **not full MVVM** |
+| Application | `Application/*Service.cs` | User operations, compensation, and orchestration across persistence, files, icons, and shortcuts |
+| Domain | `Models/FolioData.cs` | Persistence-neutral `FolioData`, `FolioFolder`, and `FolioItem` records |
+| Infrastructure | `Infrastructure/` | Fresh-read JSON repository, local item storage, and cross-process mutation lock |
+| Icons | `Icons/IconExtractor.cs`, `Icons/IconGenerator.cs`, `Icons/WindowsIconService.cs` | Win32 icon extraction and composite folder icon generation behind `IIconService` |
 | Services | `Services/LocalizationService.cs` | Runtime XAML ResourceDictionary swapping for i18n |
-| Shortcuts | `ShortCuts/ShortCutManager.cs` | Creates/updates `.lnk` files on the desktop via COM Interop |
+| Shortcuts | `ShortCuts/ShortCutManager.cs` | Creates/updates `.lnk` files through the `WScript.Shell` COM adapter |
+
+`AppComposition` manually creates services and adapters. There is no DI container or assembly scanning. Constructors do not load JSON or initialize COM, preserving the launch path's cold-start characteristics.
 
 ### Data Persistence
 
@@ -48,6 +52,8 @@ All data lives in `%LocalAppData%\FolioDesk\`:
 - `folio.json` — all `FolioFolder` / `FolioItem` records
 - `language.cfg` — user language preference
 - `icons/{folderId}/` — generated `.ico` files and cached app icon PNGs
+
+`JsonFolioRepository` reads the latest JSON for each operation rather than caching it for the process lifetime. Mutations acquire a named mutex so separate FolioDesk launch-mode processes cannot overwrite each other's stale snapshots. Saves use a unique same-directory temporary file followed by atomic replacement and backup.
 
 ### Icon Extraction (`IconExtractor.cs`)
 
@@ -67,8 +73,10 @@ Four languages (Korean default, English, Chinese, Japanese) via XAML resource di
 
 ## Key Conventions
 
-- **No MVVM** — all UI logic lives in code-behind (`.xaml.cs`) files.
-- **Singleton data manager** — always access via `App.DataManager`.
-- **Win32 P/Invoke** — shell integration uses `Shell32`, `GDI+`, and `IWshRuntimeLibrary` COM; treat these as platform-specific and Windows-only.
+- **Selective presentation separation** — keep mouse coordinates, drag ghosts, animations, focus, and Win32 window behavior in code-behind. Put multi-resource user operations in Application Services; do not add ViewModels to trivial windows solely for consistency.
+- **Manual composition** — create dependencies through `AppComposition`; do not introduce a runtime-scanning DI container without a measured need.
+- **No eager persistence** — repository and adapter constructors must remain free of file reads, COM creation, or other startup I/O.
+- **Application boundary** — windows call Application Services and queries, not JSON, file storage, icon generation, or shortcut adapters directly.
+- **Win32 P/Invoke** — shell integration uses `Shell32`, GDI+, and late-bound `WScript.Shell` COM; treat these as platform-specific and Windows-only.
 - **Installer** — `FolioDesk.iss` (Inno Setup 6.x); installs to `%LocalAppData%\FolioDesk` with lowest (non-admin) privileges and depends on .NET 10 runtime.
 - **Naming** — private fields use `_camelCase`; constants use `UPPER_CASE`.

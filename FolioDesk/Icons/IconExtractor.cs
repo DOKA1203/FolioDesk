@@ -11,7 +11,6 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using FolioDesk.Services;
-using IWshRuntimeLibrary;
 using Microsoft.Win32;
 
 /// <summary>
@@ -187,16 +186,21 @@ public static class IconExtractor
 
         try
         {
-            WshShell? shell = null;
-            IWshShortcut? shortcut = null;
+            object? shell = null;
+            object? shortcut = null;
             try
             {
-                shell = new WshShell();
-                shortcut = (IWshShortcut)shell.CreateShortcut(filePath);
+                var shellType = Type.GetTypeFromProgID("WScript.Shell") ??
+                                throw new PlatformNotSupportedException("Windows Script Host is unavailable.");
+                shell = Activator.CreateInstance(shellType) ??
+                        throw new COMException("Windows Script Host could not be created.");
+                dynamic shellApi = shell;
+                shortcut = shellApi.CreateShortcut(filePath);
+                dynamic shortcutApi = shortcut;
 
                 // 1순위: IconLocation — 런처 기반 앱(예: 발로란트)은 여기에
                 //         실제 아이콘 경로와 인덱스가 명시됩니다.
-                string iconLocation = shortcut.IconLocation;
+                string iconLocation = shortcutApi.IconLocation;
                 if (!string.IsNullOrWhiteSpace(iconLocation) && iconLocation != ",0")
                 {
                     var (iconPath, iconIndex) = ParseIconLocation(iconLocation);
@@ -205,7 +209,7 @@ public static class IconExtractor
                 }
 
                 // 2순위: TargetPath
-                string target = shortcut.TargetPath;
+                string target = shortcutApi.TargetPath;
                 if (!string.IsNullOrWhiteSpace(target) && System.IO.File.Exists(target))
                     return new IconSource(target);
 

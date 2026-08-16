@@ -1,14 +1,20 @@
 using System.Diagnostics;
-using System.IO;
 using System.Windows;
+using FolioDesk.Application;
 using FolioDesk.Services;
-using FolioDesk.ShortCuts;
 
 namespace FolioDesk;
 
 public partial class MainWindow : Window {
-    public MainWindow() {
+    private readonly CreateFolderService _createFolderService;
+
+    public MainWindow() : this(App.Composition.CreateFolderService()) { }
+
+    internal MainWindow(CreateFolderService createFolderService) {
+        _createFolderService = createFolderService;
         InitializeComponent();
+        ContentRendered += (_, _) =>
+            AppLogger.Info($"Main window content rendered. StartupElapsedMs={App.StartupElapsedMilliseconds}.");
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e) {
@@ -17,7 +23,7 @@ public partial class MainWindow : Window {
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) {
-        Application.Current.Shutdown();
+        System.Windows.Application.Current.Shutdown();
     }
 
     private void ToggleLang_Click(object sender, RoutedEventArgs e) {
@@ -31,9 +37,15 @@ public partial class MainWindow : Window {
     }
 
     private void CreateFolder(object sender, RoutedEventArgs e) {
-        var folder = App.DataManager.CreateFolioFolder(LocalizationService.Get("DefaultFolderName"));
-        var shortcutName = string.Format(LocalizationService.Get("DefaultShortcutName"), folder.Id);
-        ShortCutManager.CreateShortcut(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FolioDesk.exe"), folder.Id, shortcutName);
-        AppLogger.Info($"Create folder command completed. FolderId={folder.Id}, ShortcutName='{shortcutName}'.");
+        try {
+            var folderName = LocalizationService.Get("DefaultFolderName");
+            var shortcutTemplate = LocalizationService.Get("DefaultShortcutName");
+            var folder = _createFolderService.Create(folderName, shortcutTemplate);
+            AppLogger.Info($"Create folder command completed. FolderId={folder.Id}.");
+        }
+        catch (Exception ex) {
+            AppLogger.Error("Create folder command failed.", ex);
+            MessageBox.Show(ex.Message, "FolioDesk", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
