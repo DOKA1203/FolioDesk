@@ -3,215 +3,80 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:FolioDesk"
         Title="FolioDesk"
-        Width="420" Height="248"
+        Width="360" Height="200"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Background="Transparent"
-        Foreground="#FFF7F7F7"
-        FontFamily="Segoe UI Variable Text, Segoe UI"
-        UseLayoutRounding="True"
-        SnapsToDevicePixels="True">
+        AllowsTransparency="True"
+        Background="Transparent">
 
-    <Window.Resources>
-        <SolidColorBrush x:Key="MicaShellBrush" Color="#A61B1825"/>
-        <SolidColorBrush x:Key="FallbackShellBrush" Color="#FF211D2D"/>
-
-        <Style x:Key="CaptionButton" TargetType="Button">
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Margin" Value="2,0,0,0"/>
-            <Setter Property="Foreground" Value="#E8FFFFFF"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonSurface"
-                                CornerRadius="6"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="#1FFFFFFF"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="#31FFFFFF"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.45"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="CloseCaptionButton"
-               TargetType="Button"
-               BasedOn="{StaticResource CaptionButton}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonSurface" CornerRadius="6" Background="Transparent">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="#FFC42B1C"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonSurface" Property="Background" Value="#FFE81123"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="PrimaryActionButton" TargetType="Button">
-            <Setter Property="Height" Value="52"/>
-            <Setter Property="Background" Value="#FF7C6CF2"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ActionSurface"
-                                CornerRadius="8"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ActionSurface" Property="Background" Value="#FF8B7CF6"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ActionSurface" Property="Background" Value="#FF6958DC"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.45"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
-
-    <Border x:Name="RootShell"
-            Background="{StaticResource FallbackShellBrush}"
-            BorderBrush="#24FFFFFF"
-            BorderThickness="1"
-            CornerRadius="12">
+    <Border CornerRadius="20" Background="#0F1222" Padding="16">
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="56"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0"
-                  Margin="12,6,8,0"
+            <!-- 상단 타이틀바 -->
+            <Grid VerticalAlignment="Top" Height="40"
                   Background="Transparent"
                   MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Width="30" Height="30"
-                        CornerRadius="8"
-                        VerticalAlignment="Center"
-                        Background="#FF7C6CF2">
-                    <TextBlock Text="F"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Foreground="White"
-                               FontSize="16"
-                               FontWeight="SemiBold"/>
-                </Border>
-
-                <StackPanel Grid.Column="1"
-                            Margin="10,0,0,0"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="FolioDesk"
-                               Foreground="#FFF8F8F8"
-                               FontSize="14"
-                               FontWeight="SemiBold"/>
-                    <TextBlock Text="{DynamicResource AppSubtitle}"
-                               Margin="0,2,0,0"
-                               Foreground="#AFFFFFFF"
-                               FontSize="11"/>
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel>
+                        <TextBlock Text="FolioDesk" Foreground="White" FontWeight="Bold" Padding="5 0 0 0 " />
+                        <TextBlock Text="{DynamicResource AppSubtitle}" Foreground="#888" FontSize="10" Padding="5 0 0 0 "/>
+                    </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Center">
-                    <Button Content="{DynamicResource LangToggle}"
-                            Style="{StaticResource CaptionButton}"
-                            Click="ToggleLang_Click"
-                            FontSize="11"
-                            ToolTip="Language"/>
-                    <Button Style="{StaticResource CaptionButton}"
-                            Click="CheckUpdate_Click"
-                            ToolTip="GitHub Releases">
-                        <Viewbox Width="14" Height="14">
-                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                <!-- 오른쪽 버튼 -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <Button Content="{DynamicResource LangToggle}" Style="{StaticResource TitleButton}" Click="ToggleLang_Click"/>
+                    <Button Style="{StaticResource TitleButton}" Click="CheckUpdate_Click" ToolTip="GitHub Releases">
+                        <Viewbox Width="13" Height="13">
+                            <Path Fill="White"
                                   Data="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                         </Viewbox>
                     </Button>
-                    <Button Content="×"
-                            Style="{StaticResource CloseCaptionButton}"
-                            Click="CloseButton_Click"
-                            FontFamily="Segoe UI"
-                            FontSize="18"
-                            ToolTip="Close"/>
+                    <Button Content="✕" Style="{StaticResource TitleButton}" Click="CloseButton_Click"/>
                 </StackPanel>
             </Grid>
 
-            <Border Grid.Row="1"
-                    Margin="16,4,16,16"
-                    Padding="18"
-                    Background="#16FFFFFF"
-                    BorderBrush="#22FFFFFF"
-                    BorderThickness="1"
-                    CornerRadius="10">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+            <!-- 버전 표시 -->
+            <TextBlock Text="{x:Static local:App.Version}"
+                       VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                       Foreground="#999" FontSize="12" Margin="0,0,4,4"/>
 
-                    <TextBlock Text="{DynamicResource AppSubtitle}"
-                               Foreground="#FFF8F8F8"
-                               FontSize="18"
-                               FontWeight="SemiBold"/>
+            <!-- 중앙 컨텐츠 -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
-                    <Button Grid.Row="1"
-                            Margin="0,14,0,12"
-                            Style="{StaticResource PrimaryActionButton}"
-                            Click="CreateFolder">
-                        <TextBlock Text="{DynamicResource NewFolder}"
-                                   VerticalAlignment="Center"/>
-                    </Button>
+                <!-- 버튼 -->
+                <Button Content="{DynamicResource NewFolder}"
+                        Width="180" Height="45"
+                        Background="#7C6CF2"
+                        Foreground="White"
+                        BorderThickness="0"
+                        FontWeight="Bold"
+                        Cursor="Hand"
+                        Click="CreateFolder">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border CornerRadius="12"
+                                                Background="{TemplateBinding Background}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
 
-                    <TextBlock Grid.Row="2"
-                               Text="{x:Static local:App.Version}"
-                               HorizontalAlignment="Right"
-                               Foreground="#8FFFFFFF"
-                               FontSize="11"/>
-                </Grid>
-            </Border>
+            </StackPanel>
+
         </Grid>
     </Border>
 </Window>
