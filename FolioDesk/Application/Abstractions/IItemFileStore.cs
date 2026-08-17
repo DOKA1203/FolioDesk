@@ -13,7 +13,6 @@ public sealed record ExtractedItemFile(
     string ItemDirectory);
 
 public interface IItemFileStore {
-    bool ItemDirectoryExists(int folderId, string itemName);
     StoredItemFile Store(int folderId, string itemName, string sourcePath);
     void RollbackStore(StoredItemFile storedItem);
     ExtractedItemFile MoveToDesktop(string storedPath);

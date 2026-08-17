@@ -6,9 +6,7 @@ namespace FolioDesk.Infrastructure.Files;
 
 public sealed class LocalItemFileStore(string dataFolder) : IItemFileStore {
     private readonly string _iconsRoot = Path.Combine(dataFolder, "icons");
-
-    public bool ItemDirectoryExists(int folderId, string itemName) =>
-        Directory.Exists(GetItemDirectory(folderId, itemName));
+    private readonly string _orphanRecoveryRoot = Path.Combine(dataFolder, "recovery", "orphaned-items");
 
     public StoredItemFile Store(int folderId, string itemName, string sourcePath) {
         var fullSourcePath = Path.GetFullPath(sourcePath);
@@ -16,6 +14,7 @@ public sealed class LocalItemFileStore(string dataFolder) : IItemFileStore {
             throw new FileNotFoundException("The item to add was not found.", fullSourcePath);
 
         var itemDirectory = GetItemDirectory(folderId, itemName);
+        PrepareItemDirectory(itemDirectory, folderId, itemName);
         Directory.CreateDirectory(itemDirectory);
         var storedPath = Path.Combine(itemDirectory, Path.GetFileName(fullSourcePath));
         var iconPath = Path.Combine(itemDirectory, "icon.png");
@@ -87,6 +86,30 @@ public sealed class LocalItemFileStore(string dataFolder) : IItemFileStore {
 
     private string GetItemDirectory(int folderId, string itemName) =>
         Path.Combine(_iconsRoot, folderId.ToString(), itemName);
+
+    private void PrepareItemDirectory(string itemDirectory, int folderId, string itemName) {
+        if (!Directory.Exists(itemDirectory)) return;
+
+        var entries = Directory.GetFileSystemEntries(itemDirectory);
+        var containsOnlyGeneratedIcon = entries.Length == 0 ||
+                                        entries.All(path =>
+                                            File.Exists(path) &&
+                                            string.Equals(Path.GetFileName(path), "icon.png", StringComparison.OrdinalIgnoreCase));
+
+        if (containsOnlyGeneratedIcon) {
+            Directory.Delete(itemDirectory, recursive: true);
+            AppLogger.Info($"Removed stale generated icon directory before re-adding an item. FolderId={folderId}, Name='{itemName}'.");
+            return;
+        }
+
+        var recoveryDirectory = Path.Combine(
+            _orphanRecoveryRoot,
+            folderId.ToString(),
+            $"{itemName}.{DateTimeOffset.Now:yyyyMMddHHmmss}.{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.GetDirectoryName(recoveryDirectory)!);
+        Directory.Move(itemDirectory, recoveryDirectory);
+        AppLogger.Warning($"Moved untracked item storage to recovery before re-adding. FolderId={folderId}, Name='{itemName}', Recovery='{recoveryDirectory}'.");
+    }
 
     private static void DeleteDirectoryIfPresent(string directory) {
         if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);

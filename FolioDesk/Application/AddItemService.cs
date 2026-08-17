@@ -16,7 +16,7 @@ public sealed class AddItemService(
         using var lease = mutationLock.Acquire();
         var folder = repository.GetFolder(folderId) ??
                      throw new InvalidOperationException($"Folder {folderId} was not found.");
-        var itemName = GetUniqueItemName(folder, folderId, Path.GetFileNameWithoutExtension(sourcePath));
+        var itemName = GetUniqueItemName(folder, Path.GetFileNameWithoutExtension(sourcePath));
         StoredItemFile? storedItem = null;
         var dataSaved = false;
 
@@ -44,10 +44,15 @@ public sealed class AddItemService(
         }
     }
 
-    private string GetUniqueItemName(FolioFolder folder, int folderId, string baseName) {
+    private static string GetUniqueItemName(FolioFolder folder, string baseName) {
         var usedNames = folder.Files.Select(item => item.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in folder.Files) {
+            var storageDirectoryName = Path.GetFileName(Path.GetDirectoryName(item.Path));
+            if (!string.IsNullOrWhiteSpace(storageDirectoryName)) usedNames.Add(storageDirectoryName);
+        }
+
         var candidate = baseName;
-        for (var counter = 2; usedNames.Contains(candidate) || fileStore.ItemDirectoryExists(folderId, candidate); counter++)
+        for (var counter = 2; usedNames.Contains(candidate); counter++)
             candidate = $"{baseName} ({counter})";
         return candidate;
     }
