@@ -4,7 +4,12 @@ on:
   push:
     tags:
       - 'v*'  # v1.0.0 같은 태그 푸시 시 실행
-  workflow_dispatch: # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (for example: 2.0.0). Leave empty to use the project version.'
+        required: false
+        type: string
 
 permissions:
   contents: write # Release 업로드를 위해 반드시 필요
@@ -30,6 +35,31 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           include-prerelease: true
 
+      - name: Resolve application version
+        shell: pwsh
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:REF_TYPE -eq "tag") {
+            $version = $env:REF_NAME.TrimStart("v")
+          }
+          elseif (-not [string]::IsNullOrWhiteSpace($env:REQUESTED_VERSION)) {
+            $version = $env:REQUESTED_VERSION.TrimStart("v")
+          }
+          else {
+            [xml]$project = Get-Content -Raw "${{ env.PROJECT_PATH }}"
+            $version = @($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          }
+
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+            throw "Invalid application version: '$version'"
+          }
+
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Resolved application version: $version"
+
       # 캐시 (속도 개선)
       - name: Cache NuGet
         uses: actions/cache@v4
@@ -51,6 +81,9 @@ jobs:
             --self-contained true `
             --no-restore `
             --output "${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}" `
+            -p:Version="$env:APP_VERSION" `
+            -p:InformationalVersion="$env:APP_VERSION" `
+            -p:IncludeSourceRevisionInInformationalVersion=false `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true
 
@@ -61,10 +94,8 @@ jobs:
       - name: Build Installer
         shell: pwsh
         run: |
-          # 태그명에서 'v' 제거 (선택 사항: 1.0.0 형태만 남기기 위해)
-          $CleanVersion = "${{ github.ref_name }}".TrimStart("v")
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DAppVersion="$CleanVersion" `
+            /DAppVersion="$env:APP_VERSION" `
             /DRuntimeIdentifier="${{ matrix.runtime }}" `
             /DPublishDir="${{ github.workspace }}\${{ env.OUTPUT_DIR }}\${{ matrix.runtime }}" `
             /DOutputDir="${{ github.workspace }}\installer" `

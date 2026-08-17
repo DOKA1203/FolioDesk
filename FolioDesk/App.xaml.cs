@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 using FolioDesk.Services;
@@ -8,7 +9,7 @@ namespace FolioDesk;
 
 public partial class App : System.Windows.Application {
     private static readonly Stopwatch StartupClock = Stopwatch.StartNew();
-    public static readonly string Version = "v1.1.1";
+    public static string Version { get; } = ResolveDisplayVersion();
     public static readonly string DataFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "FolioDesk");
@@ -18,6 +19,24 @@ public partial class App : System.Windows.Application {
         Path.Combine(AppContext.BaseDirectory, "FolioDesk.exe"));
 
     internal static long StartupElapsedMilliseconds => StartupClock.ElapsedMilliseconds;
+
+    private static string ResolveDisplayVersion() {
+        var informationalVersion = typeof(App).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+        var semanticVersion = informationalVersion?.Split('+', 2)[0].Trim();
+
+        if (string.IsNullOrWhiteSpace(semanticVersion)) {
+            var assemblyVersion = typeof(App).Assembly.GetName().Version;
+            semanticVersion = assemblyVersion is null
+                ? "dev"
+                : $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}";
+        }
+
+        return semanticVersion.Equals("dev", StringComparison.OrdinalIgnoreCase)
+            ? semanticVersion
+            : $"v{semanticVersion.TrimStart('v', 'V')}";
+    }
 
     [DllImport("user32.dll")]
     private static extern bool GetCursorPos(out PointNative point);
