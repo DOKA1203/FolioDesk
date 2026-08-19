@@ -1,6 +1,6 @@
 ; GitHub Actions에서 /D 옵션으로 주입받는 변수들 정의
 #ifndef AppVersion
-  #define AppVersion "2.0.0"
+  #define AppVersion "2.0.1"
 #endif
 #ifndef RuntimeIdentifier
   #define RuntimeIdentifier "win-x64"

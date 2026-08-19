@@ -176,11 +176,15 @@ public static class IconExtractor
     }
 
     /// <summary>
-    /// .lnk 바로가기를 분석해 실제 아이콘 소스(경로 + 인덱스)를 반환합니다.
-    /// 우선순위: IconLocation → TargetPath → UWP 매니페스트 → 원본 .lnk
+    /// 바로가기를 분석해 실제 아이콘 소스(경로 + 인덱스)를 반환합니다.
+    /// .url은 InternetShortcut의 IconFile을, .lnk는
+    /// IconLocation → TargetPath → UWP 매니페스트 순으로 확인합니다.
     /// </summary>
     private static IconSource ResolvePath(string filePath)
     {
+        if (filePath.EndsWith(".url", StringComparison.OrdinalIgnoreCase))
+            return TryResolveInternetShortcutIcon(filePath) ?? new IconSource(filePath);
+
         if (!filePath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
             return new IconSource(filePath);
 
@@ -230,6 +234,63 @@ public static class IconExtractor
         }
 
         return new IconSource(filePath);
+    }
+
+    private static IconSource? TryResolveInternetShortcutIcon(string filePath)
+    {
+        try
+        {
+            var inInternetShortcutSection = false;
+            string? iconFile = null;
+            var iconIndex = 0;
+
+            foreach (var rawLine in File.ReadLines(filePath))
+            {
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line.StartsWith(';'))
+                    continue;
+
+                if (line.StartsWith('[') && line.EndsWith(']'))
+                {
+                    inInternetShortcutSection = line.Equals(
+                        "[InternetShortcut]",
+                        StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
+
+                if (!inInternetShortcutSection)
+                    continue;
+
+                var separator = line.IndexOf('=');
+                if (separator <= 0)
+                    continue;
+
+                var key = line[..separator].Trim();
+                var value = line[(separator + 1)..].Trim().Trim('"');
+
+                if (key.Equals("IconFile", StringComparison.OrdinalIgnoreCase))
+                    iconFile = value;
+                else if (key.Equals("IconIndex", StringComparison.OrdinalIgnoreCase) &&
+                         int.TryParse(value, out var parsedIndex))
+                    iconIndex = Math.Max(parsedIndex, 0);
+            }
+
+            if (string.IsNullOrWhiteSpace(iconFile))
+                return null;
+
+            var iconPath = Environment.ExpandEnvironmentVariables(iconFile);
+            if (!Path.IsPathRooted(iconPath))
+                iconPath = Path.GetFullPath(iconPath, Path.GetDirectoryName(filePath)!);
+
+            return File.Exists(iconPath)
+                ? new IconSource(iconPath, iconIndex)
+                : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            AppLogger.Warning($"Failed to resolve internet shortcut icon '{filePath}': {ex.Message}");
+            return null;
+        }
     }
 
     private static void ReleaseComObject(object? comObject)
@@ -365,14 +426,13 @@ public static class IconExtractor
 
     /// <summary>
     /// AppxManifest.xml에서 Square 계열 아이콘 경로를 추출합니다.
-    /// 큰 크기(Square310, Square150, Square44) 순으로 우선합니다.
+    /// 셸용 targetsize 변형을 제공하는 Square44를 타일용 Square150/310보다 우선합니다.
     /// </summary>
     private static string? ParseIconPathFromManifest(string manifestPath) {
         try {
             var doc = XDocument.Load(manifestPath);
 
-            // 우선순위: Square310x310 → Square150x150 → Square44x44 → Logo
-            string[] preferredAttributes = [ "Square310x310Logo", "Square150x150Logo", "Square44x44Logo", "Logo" ];
+            string[] preferredAttributes = [ "Square44x44Logo", "Square150x150Logo", "Square310x310Logo", "Logo" ];
 
             foreach (var attr in preferredAttributes) {
                 var value = doc.Descendants()
@@ -392,15 +452,36 @@ public static class IconExtractor
     }
 
     /// <summary>
-    /// Windows 스케일 접미사(scale-400 → scale-200 → scale-100)를 순서대로 탐색해
-    /// 실제 존재하는 가장 큰 이미지 파일을 반환합니다.
+    /// Windows 셸용 targetsize 자산을 먼저 찾고, 없으면 scale 자산으로 대체합니다.
     /// </summary>
     private static string? FindBestScaledIcon(string installPath, string relativeIconPath) {
         var dir = Path.GetDirectoryName(relativeIconPath) ?? "";
         var nameWithoutExt = Path.GetFileNameWithoutExtension(relativeIconPath);
         var ext = Path.GetExtension(relativeIconPath);
 
-        // scale-400 = 256px, scale-200 = 96px, scale-100 = 48px
+        // 타일 자산은 큰 투명 여백을 포함할 수 있으므로 unplated 셸 자산을 우선합니다.
+        string[] targetVariants = [
+            "targetsize-256_altform-unplated",
+            "targetsize-256_altform-lightunplated",
+            "targetsize-256",
+            "targetsize-96_altform-unplated",
+            "targetsize-96_altform-lightunplated",
+            "targetsize-96",
+            "targetsize-64_altform-unplated",
+            "targetsize-64_altform-lightunplated",
+            "targetsize-64"
+        ];
+
+        foreach (var variant in targetVariants)
+        {
+            var candidate = Path.Combine(
+                installPath, dir,
+                $"{nameWithoutExt}.{variant}{ext}");
+
+            if (System.IO.File.Exists(candidate))
+                return candidate;
+        }
+
         string[] scales = [ "scale-400", "scale-200", "scale-150", "scale-100" ];
 
         foreach (var scale in scales)
@@ -433,6 +514,15 @@ public static class IconExtractor
             ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
             ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)) {
             return TryLoadBitmapFromFile(source.FilePath);
+        }
+
+        // 명시적인 ICO는 시스템 이미지 리스트를 거치면 작은 캐시 이미지가
+        // 큰 투명 캔버스에 담겨 반환될 수 있으므로 원본 프레임을 직접 읽습니다.
+        if (ext.Equals(".ico", StringComparison.OrdinalIgnoreCase))
+        {
+            var iconBitmap = TryLoadIconFile(source.FilePath);
+            if (iconBitmap != null)
+                return iconBitmap;
         }
 
         // IconLocation에서 명시적 인덱스를 받은 경우 그 인덱스로 직접 추출
@@ -591,6 +681,20 @@ public static class IconExtractor
         }
         catch (Exception ex) {
             AppLogger.Warning($"Failed to load image file '{imagePath}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private static BitmapSource? TryLoadIconFile(string iconPath)
+    {
+        try
+        {
+            using var icon = new Icon(iconPath, new System.Drawing.Size(256, 256));
+            return CreateFrozenBitmapSource(icon.Handle);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ExternalException)
+        {
+            AppLogger.Warning($"Failed to load icon file '{iconPath}': {ex.Message}");
             return null;
         }
     }

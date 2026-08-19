@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (for example: 2.0.0). Leave empty to use the project version.'
+        description: 'Release version (for example: 2.0.1). Leave empty to use the project version.'
         required: false
         type: string
 
