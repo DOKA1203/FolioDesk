@@ -12,7 +12,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square&logo=windows)](https://github.com/doka1203/FolioDesk/releases)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 
-[다운로드](#-다운로드) · [기능 소개](#-기능) · [사용법](#-사용법) · [기여하기](#-기여하기) · [English](README.en.md)
+[다운로드](#-다운로드) · [기능 소개](#-기능) · [사용법](#-사용법) · [개발 문서](docs/PROJECT_GUIDE.md) · [기여하기](#-기여하기) · [English](README.en.md)
 
 ---
 
@@ -91,6 +91,8 @@ FolioDesk는 iOS / Android의 앱 폴더 경험을 Windows 바탕화면으로 �
 | 인스톨러 | Inno Setup |
 | 아이콘 추출 | Win32 API (Shell32, ExtractIconEx) |
 
+코드 구조, 실행 모드, 데이터 흐름, 빌드 및 릴리스 절차는 [프로젝트 가이드](docs/PROJECT_GUIDE.md)에서 확인할 수 있습니다.
+
 ## 🤝 기여하기
 
 버그 리포트, 기능 제안, PR 모두 환영합니다!
@@ -104,7 +106,6 @@ FolioDesk는 iOS / Android의 앱 폴더 경험을 Windows 바탕화면으로 �
 버그나 제안은 [Issues](https://github.com/doka1203/FolioDesk/issues)에 남겨주세요.
 
 ## 📄 라이선스
-## 📄 License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
