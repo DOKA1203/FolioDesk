@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="Installer/logo.png" alt="FolioDesk Logo" width="96" height="96" />
+<img src="Installer/logo.png" alt="FolioDesk 로고" width="128" height="128" />
 
-# FolioDesk
+<span style="font-size: 3em; font-weight: bold;">FolioDesk</span>
 
-**Windows 바탕화면에 모바일 스타일 앱 폴더를**
+A lightweight Windows app for a tidier desktop.
 
 [![Release](https://img.shields.io/github/v/release/doka1203/FolioDesk?style=flat-square&color=4A90D9)](https://github.com/doka1203/FolioDesk/releases)
 [![Downloads](https://img.shields.io/github/downloads/doka1203/FolioDesk/total?style=flat-square&color=4A90D9)](https://github.com/doka1203/FolioDesk/releases)
@@ -12,101 +12,76 @@
 [![Platform](https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square&logo=windows)](https://github.com/doka1203/FolioDesk/releases)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 
-[다운로드](#-다운로드) · [기능 소개](#-기능) · [사용법](#-사용법) · [개발 문서](docs/PROJECT_GUIDE.md) · [기여하기](#-기여하기) · [English](README.en.md)
-
----
+[Download](#Download) · [Usage](#Usage) · [Korean](README.ko.md)
 
 </div>
 
-## 📖 소개
+## Overview
 
-FolioDesk는 iOS / Android의 앱 폴더 경험을 Windows 바탕화면으로 가져옵니다.
+FolioDesk is a lightweight Windows app that organizes your desktop shortcuts into folders, much like app folders on a smartphone.
+Each folder appears as a shortcut on your desktop. Drag apps or shortcuts onto it to add them, then open the folder in a compact pop-up at your cursor. You can launch, rearrange, customize, or move items back to the desktop whenever you like.
+FolioDesk runs only when needed—without a background process—and stores all data locally on your PC.
 
-바탕화면에 흩어진 아이콘들을 모바일처럼 폴더로 묶어 정리하고, 클릭 한 번으로 열고 닫을 수 있습니다.  
-복잡한 설정 없이 설치 직후 바로 사용할 수 있으며, 백그라운드에서 상주하지 않아 시스템 리소스를 소모하지 않습니다.
+[![FolioDesk Video](https://img.youtube.com/vi/fOiZs36iT4k/maxresdefault.jpg)](https://www.youtube.com/watch?v=fOiZs36iT4k)
 
-## 🎬 시연 영상
+## Download
 
-[![FolioDesk 시연 영상](https://img.youtube.com/vi/fOiZs36iT4k/maxresdefault.jpg)](https://www.youtube.com/watch?v=fOiZs36iT4k)
+[Download the latest release](https://github.com/doka1203/FolioDesk/releases/latest) and choose the installer that matches your PC.
 
-## ✨ 기능
+| System | Look for |
+|---|---|
+| Most Intel or AMD Windows PCs | `win-x64` |
+| ARM-based Windows PCs | `win-arm64` |
 
-- **모바일 스타일 앱 폴더** — iOS / Android와 동일한 방식으로 앱을 폴더로 묶어 정리
-- **바탕화면 단축키** — 폴더 단축키를 더블클릭하면 커서 위치에 팝업으로 열림
-- **드래그앤드롭으로 앱 추가** — 실행 파일(.exe)을 폴더 단축키 위로 끌어다 놓으면 자동 등록
-- **폴더 내 순서 변경** — 아이콘을 끌어다 놓아 순서를 자유롭게 바꾸기
-- **폴더에서 꺼내기** — 아이콘을 폴더 밖으로 드래그하면 바탕화면으로 복원
-- **자동 아이콘 추출** — 등록된 앱의 아이콘을 자동으로 추출해 폴더 썸네일 생성
-- **다국어 지원** — 한국어 / 영어 / 중국어 / 일본어 (버튼 한 번으로 전환)
-- **가벼운 실행** — 백그라운드 상주 없음. 폴더를 열 때만 실행되고 닫으면 종료
+FolioDesk supports Windows 10 and 11. The installer does not require administrator privileges, and official releases include the required .NET runtime.
 
-## 💾 다운로드
+## Usage
 
-| 플랫폼 | 다운로드 |
-|--------|---------|
-| Windows 10 / 11 (64-bit) | [**최신 버전 받기 →**](https://github.com/doka1203/FolioDesk/releases/latest) |
+### 1. Create a folder
 
-> 관리자 권한 없이 설치 가능합니다. 설치 경로는 `%LocalAppData%\FolioDesk` 입니다.
+Open FolioDesk and click **New Folder**. A new FolioDesk folder shortcut will appear on your desktop.
 
-## 🚀 시작하기
+### 2. Add apps
 
-1. [최신 릴리즈](https://github.com/doka1203/FolioDesk/releases/latest)에서 `FolioDesk_Setup.exe`를 다운로드합니다.
-2. 설치 파일을 실행합니다. (관리자 권한 불필요)
-3. 설치 완료 후 FolioDesk가 자동으로 실행됩니다.
+Drag an `.exe` or `.lnk` file onto the folder shortcut. FolioDesk will add the item and update the folder icon automatically.
 
-## 📋 사용법
+Files added from the desktop are moved into FolioDesk's local storage. Files added from anywhere else are copied, so the originals stay where they are.
 
-### 폴더 만들기
+### 3. Open and organize
 
-1. FolioDesk 메인 창을 열고 **폴더 만들기** 버튼을 클릭합니다.
-2. 바탕화면에 폴더 단축키가 생성됩니다.
+Double-click the folder shortcut to open it at your current cursor position.
 
-### 앱 추가하기
+- Click an icon to launch it.
+- Drag an icon onto another icon to rearrange the items.
+- Drag an icon out of the pop-up to move it back to the desktop.
+- Use the settings button in the top-right corner to change the folder color.
+- Click anywhere outside the pop-up to close it.
 
-- 바탕화면의 `.exe` 파일(또는 다른 단축키)을 폴더 단축키 위로 **드래그앤드롭** 합니다.
-- 앱 아이콘이 자동으로 추출되어 폴더에 등록됩니다.
+### 4. Change the language
 
-### 폴더 열기
+Click the language button in the main window to cycle through Korean, English, Chinese, and Japanese. FolioDesk remembers your choice the next time it starts.
 
-- 폴더 단축키를 **더블클릭**하면 커서 위치에 폴더 팝업이 열립니다.
-- 앱 아이콘을 클릭하면 해당 앱이 실행되고 폴더가 닫힙니다.
-- 폴더 바깥 영역을 클릭하면 폴더가 닫힙니다.
+## Data storage
 
-### 앱 꺼내기 / 순서 변경
+FolioDesk keeps its settings and folder contents in `%LocalAppData%\FolioDesk`.
 
-- 폴더 내 아이콘을 **폴더 바깥으로 드래그**하면 바탕화면으로 복원됩니다.
-- 폴더 내 아이콘을 **다른 아이콘 위로 드래그**하면 순서가 바뀝니다.
+| Path | Contents |
+|---|---|
+| `folio.json` | Folder and item data |
+| `icons\<folder ID>` | Stored files and generated icons |
+| `language.cfg` | Language preference |
+| `logs\FolioDesk.log` | Application and error logs |
 
-### 언어 변경
+Before uninstalling FolioDesk or deleting its data folder, move any files you want to keep back to the desktop or make a backup of the entire folder. Items added from the desktop may have their original files stored here.
 
-- 메인 창의 언어 토글 버튼을 클릭하면 한국어 → 영어 → 중국어 → 일본어 순으로 전환됩니다.
+## Contributing
 
-## 🛠 기술 스택
+If you run into a bug or have an idea for an improvement, feel free to [open an issue](https://github.com/doka1203/FolioDesk/issues). Pull requests are welcome too. For larger changes, please open an issue first so we can discuss the approach before you start.
 
-| 항목 | 내용 |
-|------|------|
-| 언어 | C# |
-| 프레임워크 | .NET 10, WPF |
-| 데이터 저장 | JSON (`%LocalAppData%\FolioDesk\folio.json`) |
-| 인스톨러 | Inno Setup |
-| 아이콘 추출 | Win32 API (Shell32, ExtractIconEx) |
+There are no automated tests yet. After making changes, please check folder creation, adding and rearranging items, moving items back to the desktop, changing folder colors, and switching languages manually.
 
-코드 구조, 실행 모드, 데이터 흐름, 빌드 및 릴리스 절차는 [프로젝트 가이드](docs/PROJECT_GUIDE.md)에서 확인할 수 있습니다.
+## License
 
-## 🤝 기여하기
+FolioDesk is released under the [GNU General Public License v3.0](LICENSE).
 
-버그 리포트, 기능 제안, PR 모두 환영합니다!
-
-1. 이 저장소를 Fork 합니다.
-2. 새 브랜치를 생성합니다 (`git checkout -b feature/amazing-feature`)
-3. 변경 사항을 커밋합니다 (`git commit -m 'Add amazing feature'`)
-4. 브랜치에 Push 합니다 (`git push origin feature/amazing-feature`)
-5. Pull Request를 열어주세요.
-
-버그나 제안은 [Issues](https://github.com/doka1203/FolioDesk/issues)에 남겨주세요.
-
-## 📄 라이선스
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-Copyright (c) 2026 doka1203
+Copyright (c) 2026 DOKA1203

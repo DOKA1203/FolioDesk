@@ -2,6 +2,7 @@ using FolioDesk.Application;
 using FolioDesk.Application.Abstractions;
 using FolioDesk.Icons;
 using FolioDesk.Infrastructure.Concurrency;
+using FolioDesk.Infrastructure.Desktop;
 using FolioDesk.Infrastructure.Files;
 using FolioDesk.Infrastructure.Persistence;
 using FolioDesk.ShortCuts;
@@ -9,6 +10,8 @@ using FolioDesk.ShortCuts;
 namespace FolioDesk;
 
 internal sealed class AppComposition(string dataFolder, string executablePath) {
+    public IDesktopIconLocator CreateDesktopIconLocator() => new WindowsDesktopIconLocator(executablePath);
+
     public FolderQueryService CreateFolderQueryService() => new(CreateRepository(), CreateMutationLock());
 
     public CreateFolderService CreateFolderService() => new(

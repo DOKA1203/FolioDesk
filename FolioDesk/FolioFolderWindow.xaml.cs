@@ -32,11 +32,16 @@ public partial class FolioFolderWindow : Window {
     private bool _justDragged;
     private bool _droppedInternally;
     private bool _settingsOpen;
+    private bool _keyboardNavigationEnabled;
+    private AppIcon? _keyboardSelectedIcon;
     private Image? _dragGhost;
 
     private const double ItemWidth = 80.0;
     private const double FramePadding = 16.0;
     private const int SingleRowMax = 5;
+
+    internal double InitialOpenWidth { get; private set; }
+    internal double TargetOpenWidth { get; private set; }
 
     public FolioFolderWindow(int folderId) : this(
         folderId,
@@ -69,20 +74,22 @@ public partial class FolioFolderWindow : Window {
         ApplyContentWidth();
         AppFolderPanel.ItemsSource = _appIcons;
 
-        var targetWidth = AppFolderPanel.Width + FramePadding;
-        var startWidth = Math.Min(ItemWidth + FramePadding, targetWidth);
-        Width = startWidth;
+        TargetOpenWidth = AppFolderPanel.Width + FramePadding;
+        InitialOpenWidth = Math.Min(ItemWidth + FramePadding, TargetOpenWidth);
+        Width = InitialOpenWidth;
 
-        if (targetWidth > startWidth + 0.5) {
-            Loaded += (_, _) => AnimateOpenWidth(startWidth, targetWidth);
+        if (TargetOpenWidth > InitialOpenWidth + 0.5) {
+            Loaded += (_, _) => AnimateOpenWidth(InitialOpenWidth, TargetOpenWidth);
         }
     }
 
     private void ApplyContentWidth() {
-        int n = _appIcons.Count;
-        int rows = n <= SingleRowMax ? 1 : 2;
-        int cols = Math.Max(1, (int)Math.Ceiling(n / (double)rows));
-        AppFolderPanel.Width = cols * ItemWidth;
+        AppFolderPanel.Width = GetColumnCount(_appIcons.Count) * ItemWidth;
+    }
+
+    private static int GetColumnCount(int itemCount) {
+        var rows = itemCount <= SingleRowMax ? 1 : 2;
+        return Math.Max(1, (int)Math.Ceiling(itemCount / (double)rows));
     }
 
     private void AnimateOpenWidth(double from, double to) {
@@ -136,6 +143,7 @@ public partial class FolioFolderWindow : Window {
     }
 
     private void Icon_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+        ExitKeyboardNavigation();
         _justDragged = false;
         _dragStartPoint = e.GetPosition(null);
         if (sender is Border border) {
@@ -196,6 +204,8 @@ public partial class FolioFolderWindow : Window {
         try {
             var destination = _contentService.ExtractToDesktop(_folderId, icon.Item);
             _appIcons.Remove(icon);
+            if (ReferenceEquals(_keyboardSelectedIcon, icon))
+                _keyboardSelectedIcon = null;
 
             ApplyContentWidth();
             Width = AppFolderPanel.Width + FramePadding;
@@ -275,10 +285,102 @@ public partial class FolioFolderWindow : Window {
         e.Handled = true;
 
         if (sender is Border border && border.DataContext is AppIcon icon) {
-            ShellExecute(IntPtr.Zero, "open", icon.LnkPath, "", "", 1);
-            Close();
+            LaunchIcon(icon);
         }
     }
+
+    internal void EnableKeyboardNavigation() {
+        _keyboardNavigationEnabled = true;
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () => {
+            if (IsVisible && _appIcons.Count > 0)
+                FocusKeyboardIcon(_appIcons[0]);
+        });
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e) {
+        if (_isDragging || _settingsOpen) return;
+
+        if (e.Key == Key.Escape) {
+            e.Handled = true;
+            Close();
+            return;
+        }
+
+        if (!_keyboardNavigationEnabled) return;
+
+        switch (e.Key) {
+            case Key.Left:
+            case Key.Right:
+            case Key.Up:
+            case Key.Down:
+                e.Handled = true;
+                MoveKeyboardSelection(e.Key);
+                break;
+
+            case Key.Enter:
+                if (_keyboardSelectedIcon is not null) {
+                    e.Handled = true;
+                    LaunchIcon(_keyboardSelectedIcon);
+                }
+                break;
+        }
+    }
+
+    private void Window_PreviewMouseMove(object sender, MouseEventArgs e) {
+        if (_keyboardSelectedIcon is not null && !_isDragging)
+            ExitKeyboardNavigation();
+    }
+
+    private void MoveKeyboardSelection(Key key) {
+        if (_appIcons.Count == 0) return;
+        if (_keyboardSelectedIcon is null) {
+            FocusKeyboardIcon(_appIcons[0]);
+            return;
+        }
+
+        var currentIndex = _appIcons.IndexOf(_keyboardSelectedIcon);
+        if (currentIndex < 0) {
+            FocusKeyboardIcon(_appIcons[0]);
+            return;
+        }
+
+        var columns = GetColumnCount(_appIcons.Count);
+        var column = currentIndex % columns;
+        var targetIndex = key switch {
+            Key.Left when column > 0 => currentIndex - 1,
+            Key.Right when column + 1 < columns && currentIndex + 1 < _appIcons.Count => currentIndex + 1,
+            Key.Up when currentIndex - columns >= 0 => currentIndex - columns,
+            Key.Down when currentIndex + columns < _appIcons.Count => currentIndex + columns,
+            _ => currentIndex
+        };
+
+        if (targetIndex != currentIndex)
+            FocusKeyboardIcon(_appIcons[targetIndex]);
+    }
+
+    private void FocusKeyboardIcon(AppIcon icon) {
+        var index = _appIcons.IndexOf(icon);
+        if (index < 0) return;
+
+        AppFolderPanel.UpdateLayout();
+        if (AppFolderPanel.ItemContainerGenerator.ContainerFromIndex(index) is not ContentPresenter container)
+            return;
+
+        _keyboardSelectedIcon = icon;
+        Keyboard.Focus(container);
+    }
+
+    private void ExitKeyboardNavigation() {
+        if (_keyboardSelectedIcon is null) return;
+        _keyboardSelectedIcon = null;
+        Keyboard.Focus(AppFolderPanel);
+    }
+
+    private void LaunchIcon(AppIcon icon) {
+        ShellExecute(IntPtr.Zero, "open", icon.LnkPath, "", "", 1);
+        Close();
+    }
+
     [DllImport("Shell32.dll")]
     private static extern int ShellExecute(IntPtr hwnd, string lpOperation, string lpFile, string lpParameters, string lpDirectory, int nShowCmd);
 }

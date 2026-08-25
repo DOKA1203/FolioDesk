@@ -7,6 +7,8 @@
         Title="FolioDesk" Width="96" SizeToContent="Height" MinHeight="116"
         WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewMouseMove="Window_PreviewMouseMove"
         Opacity="0.97">
     <Window.Resources>
         <Style TargetType="{x:Type Window}">
@@ -31,6 +33,7 @@
                     HorizontalAlignment="Right" VerticalAlignment="Top"
                     Width="20" Height="20"
                     FontSize="12"
+                    IsTabStop="False"
                     Cursor="Hand"
                     Click="SettingsButton_Click"
                     ToolTip="아이콘 색상 설정">
@@ -67,7 +70,8 @@
                 </Viewbox>
             </Button>
 
-            <ItemsControl x:Name="AppFolderPanel" HorizontalAlignment="Left" Margin="0,5,0,0">
+            <ItemsControl x:Name="AppFolderPanel" HorizontalAlignment="Left" Margin="0,5,0,0"
+                          Focusable="True" IsTabStop="False" FocusVisualStyle="{x:Null}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel HorizontalAlignment="Center"
@@ -75,6 +79,13 @@
                                    ItemWidth="80" ItemHeight="100"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Focusable" Value="True"/>
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -92,6 +103,10 @@
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="Background" Value="#33FFFFFF"/>
                                         </Trigger>
+                                        <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=ContentPresenter}}"
+                                                     Value="True">
+                                            <Setter Property="Background" Value="#33FFFFFF"/>
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>

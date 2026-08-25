@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
+using FolioDesk.Infrastructure.Desktop;
 using FolioDesk.Services;
 
 namespace FolioDesk;
@@ -38,15 +39,6 @@ public partial class App : System.Windows.Application {
             : $"v{semanticVersion.TrimStart('v', 'V')}";
     }
 
-    [DllImport("user32.dll")]
-    private static extern bool GetCursorPos(out PointNative point);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PointNative {
-        public int X;
-        public int Y;
-    }
-
     protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
         AppLogger.Initialize(DataFolder);
@@ -61,7 +53,7 @@ public partial class App : System.Windows.Application {
                     break;
 
                 case 1:
-                    ShowFolderAtCursor(ParseFolderId(e.Args[0]));
+                    ShowFolderAtDesktopIcon(ParseFolderId(e.Args[0]));
                     break;
 
                 case 2:
@@ -85,9 +77,14 @@ public partial class App : System.Windows.Application {
         return folderId;
     }
 
-    private static void ShowFolderAtCursor(int folderId) {
-        if (!GetCursorPos(out var cursor))
+    private static void ShowFolderAtDesktopIcon(int folderId) {
+        var cursorLocated = WindowsPopupPlacement.TryGetCursorPosition(out var cursor);
+        var iconLocated = Composition.CreateDesktopIconLocator().TryLocate(folderId, out var iconPosition);
+        if (!iconLocated && !cursorLocated)
             throw new InvalidOperationException(LocalizationService.Get("MousePositionError"));
+
+        var anchor = iconLocated ? iconPosition : cursor;
+        var cursorForPlacement = cursorLocated ? cursor : anchor;
 
         var window = new FolioFolderWindow(
             folderId,
@@ -98,15 +95,42 @@ public partial class App : System.Windows.Application {
         };
 
         window.SourceInitialized += (_, _) => {
-            var source = PresentationSource.FromVisual(window);
-            if (source?.CompositionTarget == null) return;
-            var point = source.CompositionTarget.TransformFromDevice.Transform(new Point(cursor.X, cursor.Y));
-            window.Left = point.X;
-            window.Top = point.Y;
+            var windowHandle = new WindowInteropHelper(window).Handle;
+            if (!WindowsPopupPlacement.TryMoveToAnchor(windowHandle, anchor))
+                AppLogger.Warning($"Initial popup placement failed. FolderId={folderId}, Anchor=({anchor.X},{anchor.Y}).");
+        };
+
+        window.Loaded += (_, _) => {
+            var windowHandle = new WindowInteropHelper(window).Handle;
+            if (!WindowsPopupPlacement.TryPlaceWithinWorkArea(
+                    windowHandle,
+                    anchor,
+                    cursorForPlacement,
+                    window.InitialOpenWidth,
+                    window.TargetOpenWidth,
+                    out var placement)) {
+                AppLogger.Warning($"Final popup placement failed. FolderId={folderId}, Anchor=({anchor.X},{anchor.Y}).");
+                return;
+            }
+
+            var keyboardLaunchLikely = iconLocated && cursorLocated && !placement.CursorInside;
+            if (keyboardLaunchLikely)
+                window.EnableKeyboardNavigation();
+
+            AppLogger.Info(
+                $"Placed folder window. FolderId={folderId}, AnchorSource={(iconLocated ? "DesktopIcon" : "Cursor")}, " +
+                $"Anchor=({anchor.X},{anchor.Y}), Bounds=({placement.Bounds.Left},{placement.Bounds.Top}," +
+                $"{placement.Bounds.Right},{placement.Bounds.Bottom}), WorkArea=({placement.WorkArea.Left}," +
+                $"{placement.WorkArea.Top},{placement.WorkArea.Right},{placement.WorkArea.Bottom}), " +
+                $"InputMode={(keyboardLaunchLikely ? "Keyboard" : "Mouse")}."
+            );
         };
 
         window.Show();
-        AppLogger.Info($"Folder window shown. FolderId={folderId}, Cursor=({cursor.X},{cursor.Y}).");
+        AppLogger.Info(
+            $"Folder window shown. FolderId={folderId}, AnchorSource={(iconLocated ? "DesktopIcon" : "Cursor")}, " +
+            $"Cursor={(cursorLocated ? $"({cursor.X},{cursor.Y})" : "Unavailable")}, " +
+            $"Anchor=({anchor.X},{anchor.Y}).");
     }
 
     private static void AddItemAndExit(int folderId, string sourcePath) {

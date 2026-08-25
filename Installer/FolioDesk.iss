@@ -1,6 +1,6 @@
 ; GitHub Actions에서 /D 옵션으로 주입받는 변수들 정의
 #ifndef AppVersion
-  #define AppVersion "2.0.1"
+  #define AppVersion "2.1.0"
 #endif
 #ifndef RuntimeIdentifier
   #define RuntimeIdentifier "win-x64"
@@ -21,6 +21,8 @@ AppId={{40DF4033-CCC5-4A03-AB80-C13323DF6D0E}
 AppName={#MyAppName}
 AppVersion={#AppVersion}
 AppPublisher={#MyAppPublisher}
+SetupIconFile=ICO.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
 ; 사용자 권한으로 설치 (관리자 권한 불필요)
 DefaultDirName={localappdata}\{#MyAppName}
 DefaultGroupName={#MyAppName}
