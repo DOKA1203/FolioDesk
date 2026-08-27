@@ -252,6 +252,11 @@ public sealed class WindowsDesktopIconLocator(string executablePath) : IDesktopI
         position = default;
         if (folderView.GetItemPosition(itemIdList, out var point) < 0)
             return false;
+        if (folderView.GetSpacing(out var spacing) < 0 || spacing.X <= 0 || spacing.Y <= 0)
+            return false;
+
+        point.X += spacing.X / 2;
+        point.Y += spacing.Y / 2;
         if (!ClientToScreen(viewWindow, ref point))
             return false;
 
@@ -413,6 +418,7 @@ public sealed class WindowsDesktopIconLocator(string executablePath) : IDesktopI
         [PreserveSig] int GetSelectionMarkedItem(out int index);
         [PreserveSig] int GetFocusedItem(out int index);
         [PreserveSig] int GetItemPosition(IntPtr itemIdList, out NativePoint point);
+        [PreserveSig] int GetSpacing(out NativePoint spacing);
     }
 
     [ComImport]
