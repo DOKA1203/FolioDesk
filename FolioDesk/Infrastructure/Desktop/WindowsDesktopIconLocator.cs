@@ -255,8 +255,8 @@ public sealed class WindowsDesktopIconLocator(string executablePath) : IDesktopI
         if (folderView.GetSpacing(out var spacing) < 0 || spacing.X <= 0 || spacing.Y <= 0)
             return false;
 
-        point.X += spacing.X / 2;
-        point.Y += spacing.Y / 2;
+        point.X += spacing.X * 2 / 5;
+        point.Y += spacing.Y * 2 / 5;
         if (!ClientToScreen(viewWindow, ref point))
             return false;
 
